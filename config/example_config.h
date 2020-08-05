@@ -28,7 +28,7 @@
 //      CP_AS923_JAPAN
 //      CP_IN865
 #if !defined(CHANNEL_PLAN)
-#define CHANNEL_PLAN CP_US915
+#define CHANNEL_PLAN CP_AU915
 #endif
 
 //-------------------------------------------------------------

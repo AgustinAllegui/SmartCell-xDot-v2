@@ -142,7 +142,7 @@ int main()
         // join network if not joined
         if (!dot->getNetworkJoinStatus())
         {
-            join_network;
+            join_network();
         }
 
         // [START] Pulse counter Loop
@@ -186,7 +186,7 @@ int main()
         // it must be waiting for data from the gateway
         // send data every 30s
         logInfo("waiting for 300s");
-        wait(300);
+        wait(30);
 				
     }
 
