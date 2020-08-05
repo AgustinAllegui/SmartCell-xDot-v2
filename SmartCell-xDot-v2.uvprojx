@@ -398,6 +398,11 @@
               <FilePath>src/pulse_meter.cpp</FilePath>
             </File>
             <File>
+              <FileName>luminary.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>src/luminary.cpp</FilePath>
+            </File>
+            <File>
               <FileName>RadioEvent.h</FileName>
               <FileType>5</FileType>
               <FilePath>inc/RadioEvent.h</FilePath>

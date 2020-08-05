@@ -1,9 +1,8 @@
 #include "dot_util.h"
 #include "RadioEvent.h"
 
-#if ACTIVE_EXAMPLE == PULSE_METER
+#if ACTIVE_EXAMPLE == LUMINARY
 
-#include "PulseCounter.h"
 
 /////////////////////////////////////////////////////////////
 // * these options must match the settings on your gateway //
@@ -29,11 +28,11 @@ lora::ChannelPlan *plan = NULL;
 
 Serial pc(USBTX, USBRX);
 
-// [START] Pulse counter global
+// [START] Luminary global
 
-PulseCounter pulseCounter(PA_11, true);
 
-// [END] Pulse counter global
+
+// [END] Luminary global
 
 int main()
 {
@@ -119,21 +118,12 @@ int main()
     // display configuration
     display_config();
     
-    // [START] init Pulse counter
+    // [START] init Luminary
     logInfo("========================");
-    logInfo("PULSE METER version");
+    logInfo("LUMINARY version");
     logInfo("========================");
     
-    uint16_t pulses = 0;
-		
-		#if TEST_DATA_GEN == 1
-		const uint16_t minValue = 20;
-		const uint16_t maxValue = 100;
-		const uint16_t upValue = 2;
-		uint16_t lastValue = minValue;
-		#endif
-    
-    // [END] init Pulse counter
+    // [END] init Luminary
 
     while (true)
     {
@@ -148,34 +138,10 @@ int main()
 				// ask for time
 				logInfo("Timestamp: %lld", dot->getGPSTime() + 315964800000);
 
-        // [START] Pulse counter Loop
-        pulses = pulseCounter.read();
-        logInfo("Pulses counted: %u", pulses);
-        pulseCounter.reset();
-				
-				#if TEST_DATA_GEN == 1
-				pulses = lastValue + upValue;
-				if(lastValue > maxValue) {
-					pulses = minValue;
-				}
-				lastValue = pulses;
-				logInfo("Pulses simulated: %u", pulses);
-				#endif
-				
+        // [START] Luminary Loop
         
-        if (dot->getNetworkJoinStatus())
-        {
-            tx_data.clear();
-            tx_data.push_back(0x53);
-            tx_data.push_back(0x00);
-            tx_data.push_back(0x00);
-            tx_data.push_back(0x00);
-            tx_data.push_back((uint8_t)(pulses & 0x00FF));
-        }
 				
-				
-				
-        // [END] Pulse counter Loop
+        // [END] Luminary Loop
         
         
         if (dot->getNetworkJoinStatus())
@@ -188,7 +154,7 @@ int main()
         // the Dot can't sleep in class C mode
         // it must be waiting for data from the gateway
         // send data every 30s
-        logInfo("waiting for 300s");
+        logInfo("waiting for 30s");
         wait(30);
 				
     }

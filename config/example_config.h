@@ -12,10 +12,11 @@
 #define FOTA_EXAMPLE             7  // see fota_example.cpp
 
 #define PULSE_METER              8  // see pulse_meter.cpp
+#define LUMINARY								 9	// see luminary.cpp
 
 // the active example is the one that will be compiled
 #if !defined(ACTIVE_EXAMPLE)
-#define ACTIVE_EXAMPLE  PULSE_METER
+#define ACTIVE_EXAMPLE  LUMINARY
 #endif
 
 // the active channel plan is the one that will be compiled
