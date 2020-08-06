@@ -153,10 +153,11 @@ int main()
         
         // the Dot can't sleep in class C mode
         // it must be waiting for data from the gateway
-        // send data every 30s
-        logInfo("waiting for 30s");
-        wait(30);
-				
+				unsigned int loopDelay = 3;			// everyDelay*10 = amount of seconds between loops
+        logInfo("waiting for %u0s", loopDelay);
+        for(unsigned int i = 0; i< loopDelay; i++){
+					wait_us(10000000);
+				}
     }
 
     return 0;
