@@ -407,6 +407,16 @@
               <FileType>5</FileType>
               <FilePath>inc/RadioEvent.h</FilePath>
             </File>
+            <File>
+              <FileName>EventSlot.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\inc\EventSlot.h</FilePath>
+            </File>
+            <File>
+              <FileName>EventSlot.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\src\EventSlot.cpp</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

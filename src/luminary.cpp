@@ -1,5 +1,6 @@
 #include "dot_util.h"
-#include "RadioEvent.h"
+// #include "RadioEvent.h"
+#include "EventSlot.h"
 
 #if ACTIVE_EXAMPLE == LUMINARY
 
@@ -8,7 +9,6 @@
 #include "CurrentSensor.h"
 
 // [STOP] Luminary Includes
-
 
 /////////////////////////////////////////////////////////////
 // * these options must match the settings on your gateway //
@@ -35,18 +35,26 @@ lora::ChannelPlan *plan = NULL;
 Serial pc(USBTX, USBRX);
 
 // [START] Luminary global
-DigitalOut	led1(PA_4);
-DigitalOut	led2(PA_5);
+DigitalOut led1(PA_4);
+DigitalOut led2(PA_5);
 
 CurrentSensor currentSensor(PB_12);
 
+void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
+{
+    logTrace("SmartCell::payloadParser");
+    logDebug("Into Payload Parser");
+
+    logInfo("Rx %d bytes", RxBufferSize);
+		logInfo("First letter %c", RxBuffer[0]);
+}
 
 // [END] Luminary global
 
 int main()
 {
     // Custom event handler for automatically displaying RX data
-    RadioEvent events;
+    EventSlot events(&payloadParser);
 
     pc.baud(9600);
 
@@ -126,17 +134,15 @@ int main()
 
     // display configuration
     display_config();
-    
+
     // [START] init Luminary
     logInfo("========================");
     logInfo("LUMINARY version");
     logInfo("========================");
-		
-		// Enceder Led
-		led1 = 1;
-		
-				
-    
+
+    // Enceder Led
+    led1 = 1;
+
     // [END] init Luminary
 
     while (true)
@@ -146,39 +152,34 @@ int main()
         // join network if not joined
         if (!dot->getNetworkJoinStatus())
         {
-					join_network();
-					// ask for time
-					set_time((dot->getGPSTime()/1000) + 315964800);
+            join_network();
+            // ask for time
+            set_time((dot->getGPSTime() / 1000) + 315964800);
         }
-				time_t seconds = time(NULL);
-				logInfo("Current Time: %s UTC", ctime(&seconds));
-				
-				
+        time_t seconds = time(NULL);
+        logInfo("Current Time: UTC %s", ctime(&seconds));
 
         // [START] Luminary Loop
-        
-				
+        led1 = ~led1;
+
         // [END] Luminary Loop
-        
-        
+
         if (dot->getNetworkJoinStatus())
         {
             send_data(tx_data);
         }
-        
-       
-        
+
         // the Dot can't sleep in class C mode
         // it must be waiting for data from the gateway
-				unsigned int loopDelay = 3;			// everyDelay*10 = amount of seconds between loops
+        unsigned int loopDelay = 3; // everyDelay*10 = amount of seconds between loops
         logInfo("waiting for %u0s", loopDelay);
-        for(unsigned int i = 0; i< loopDelay; i++){
-					wait_us(10000000);
-				}
+        for (unsigned int i = 0; i < loopDelay; i++)
+        {
+            wait_us(10000000);
+        }
     }
 
     return 0;
 }
 
 #endif
-
