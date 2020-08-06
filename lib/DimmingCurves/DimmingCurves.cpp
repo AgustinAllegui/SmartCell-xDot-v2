@@ -1,0 +1,59 @@
+// DimmingCurves.cpp
+
+#include "DimmingCurves.h"
+
+const uint8_t DimmingCurves::curves[][12] = {
+      //  0     2     4     6     8     10    12    14    16    18    20    22
+      // 1     3     5     7     9     11    13    15    17    19    21    23
+      {0x10, 0x32, 0x54, 0x76, 0x98, 0x1A, 0x32, 0x54, 0x76, 0x98, 0x1A, 0x32},
+      {0x00, 0x10, 0x32, 0x54, 0x76, 0x98, 0x1A, 0x32, 0x54, 0x76, 0x98, 0x1A},
+      {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+  };
+
+DimmingCurves::DimmingCurves(const uint8_t index)
+    : currentCurve(index)
+{
+  maxIndex = sizeof(curves) / sizeof(curves[0]);
+  if (index > maxIndex)
+  {
+    currentCurve = 0;
+  }
+}
+
+uint8_t DimmingCurves::selectCurve(const uint8_t index)
+{
+  if (index > maxIndex)
+  {
+    currentCurve = 0;
+  }
+  else
+  {
+    currentCurve = index;
+  }
+  return currentCurve;
+}
+
+uint8_t DimmingCurves::getDimming(const uint8_t hour)
+{
+  if (hour > 23)
+  {
+    // escapar si hora mayor a 23
+    return 0;
+  }
+
+  uint8_t twoValues = curves[currentCurve][hour / 2];
+
+	uint8_t dimming;
+	if(hour % 2 != 0){
+		dimming = twoValues & 0xF0;
+		dimming = dimming>>4;
+	}else{
+		dimming = twoValues & 0x0F;
+	}
+  return dimming;
+}
+
+
+
+
+

@@ -7,6 +7,7 @@
 // [START] Luminary Includes
 
 #include "CurrentSensor.h"
+#include "DimmingCurves.h"
 
 // [STOP] Luminary Includes
 
@@ -46,7 +47,7 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
     logDebug("Into Payload Parser");
 
     logInfo("Rx %d bytes", RxBufferSize);
-		logInfo("First letter %c", RxBuffer[0]);
+    logInfo("First letter %c", RxBuffer[0]);
 }
 
 // [END] Luminary global
@@ -142,6 +143,11 @@ int main()
 
     // Enceder Led
     led1 = 1;
+		
+		DimmingCurves dimmingCurves;
+		dimmingCurves.selectCurve(1);
+		uint8_t hour = 0;
+		
 
     // [END] init Luminary
 
@@ -152,7 +158,7 @@ int main()
         // join network if not joined
         if (!dot->getNetworkJoinStatus())
         {
-            join_network();
+            // join_network();
             // ask for time
             set_time((dot->getGPSTime() / 1000) + 315964800);
         }
@@ -160,7 +166,20 @@ int main()
         logInfo("Current Time: UTC %s", ctime(&seconds));
 
         // [START] Luminary Loop
-        led1 = ~led1;
+        led1 = (led1) ? 0 : 1;
+
+				
+				
+				uint8_t actualDimming = dimmingCurves.getDimming(hour);
+				hour++;
+				if(hour > 23) {
+					hour = 0;
+				}
+				
+				logInfo("Acutal curve: %u", dimmingCurves.getCurrentCurve());
+				logInfo("Actual dimming: %u", actualDimming);
+				
+				
 
         // [END] Luminary Loop
 
@@ -171,7 +190,7 @@ int main()
 
         // the Dot can't sleep in class C mode
         // it must be waiting for data from the gateway
-        unsigned int loopDelay = 3; // everyDelay*10 = amount of seconds between loops
+        unsigned int loopDelay = 1; // everyDelay*10 = amount of seconds between loops
         logInfo("waiting for %u0s", loopDelay);
         for (unsigned int i = 0; i < loopDelay; i++)
         {
