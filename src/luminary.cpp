@@ -146,11 +146,12 @@ int main()
         // join network if not joined
         if (!dot->getNetworkJoinStatus())
         {
-            join_network();
+					join_network();
+					// ask for time
+					set_time((dot->getGPSTime()/1000) + 315964800);
         }
-				
-				// ask for time
-				logInfo("Timestamp: %lld", dot->getGPSTime() + 315964800000);
+				time_t seconds = time(NULL);
+				logInfo("Current Time: %s UTC", ctime(&seconds));
 				
 				
 
