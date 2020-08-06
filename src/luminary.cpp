@@ -3,6 +3,12 @@
 
 #if ACTIVE_EXAMPLE == LUMINARY
 
+// [START] Luminary Includes
+
+#include "CurrentSensor.h"
+
+// [STOP] Luminary Includes
+
 
 /////////////////////////////////////////////////////////////
 // * these options must match the settings on your gateway //
@@ -31,6 +37,8 @@ Serial pc(USBTX, USBRX);
 // [START] Luminary global
 DigitalOut	led1(PA_4);
 DigitalOut	led2(PA_5);
+
+CurrentSensor currentSensor(PB_12);
 
 
 // [END] Luminary global
@@ -123,7 +131,11 @@ int main()
     logInfo("========================");
     logInfo("LUMINARY version");
     logInfo("========================");
+		
+		// Enceder Led
 		led1 = 1;
+		
+				
     
     // [END] init Luminary
 
@@ -139,6 +151,8 @@ int main()
 				
 				// ask for time
 				logInfo("Timestamp: %lld", dot->getGPSTime() + 315964800000);
+				
+				
 
         // [START] Luminary Loop
         
