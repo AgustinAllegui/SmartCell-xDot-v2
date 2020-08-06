@@ -17,7 +17,7 @@ static std::string network_passphrase = "MultiTech";
 static uint8_t network_id[] = APP_EUI;
 static uint8_t network_key[] = APP_KEY;
 
-static uint8_t frequency_sub_band = 2;
+static uint8_t frequency_sub_band = LORA_SUB_BAND;
 static lora::NetworkType network_type = lora::PUBLIC_LORAWAN;
 static uint8_t join_delay = 5;
 static uint8_t ack = 1;
@@ -29,7 +29,8 @@ lora::ChannelPlan *plan = NULL;
 Serial pc(USBTX, USBRX);
 
 // [START] Luminary global
-
+DigitalOut	led1(PA_4);
+DigitalOut	led2(PA_5);
 
 
 // [END] Luminary global
@@ -122,6 +123,7 @@ int main()
     logInfo("========================");
     logInfo("LUMINARY version");
     logInfo("========================");
+		led1 = 1;
     
     // [END] init Luminary
 

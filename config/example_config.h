@@ -38,16 +38,24 @@
 // 0: deactivated
 // 1: activated
 #if !defined(TEST_DATA_GEN)
-#define TEST_DATA_GEN 1
+#define TEST_DATA_GEN 0
 #endif
 
 //-------------------------------------------------------------
-// define App Eui y App key
+// define App Eui, App key y Sub band
 
 #define APP_EUI {0x88, 0x88, 0x88, 0x88, 0x00, 0x00, 0x00, 0x02}
 
 // nodo xDot
 #define APP_KEY {0x1d, 0xbf, 0x53, 0x7d, 0xc8, 0xb3, 0xa0, 0x5b, 0x51, 0xd4, 0x39, 0x34, 0xce, 0x6b, 0x8e, 0xe5}
+
+/*	sub band:
+ *	0: Auto
+ *	1: Yeap
+ *	2: ChirpStack
+ */ 
+
+#define LORA_SUB_BAND 2
 
 
 #endif
