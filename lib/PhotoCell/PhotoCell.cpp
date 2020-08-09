@@ -25,13 +25,12 @@ void PhotoCell::setThreshold(const float onThreshold_, const float offThreshold_
  *  Lee el valor de la fotocelda
  *  Realiza un primedio de 10 puntos
  */
-float PhotoCell::read()
+float PhotoCell::read(const uint8_t ammount)
 {
-  const uint8_t count = 10;
   float accumulator = 0;
-  for (uint8_t i = 1; i < count; i++)
+  for (uint8_t i = 1; i < ammount; i++)
   {
-    accumulator += (pin.read() / count);
+    accumulator += (pin.read() / ammount);
   }
 
   return accumulator;
