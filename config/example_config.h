@@ -2,21 +2,22 @@
 #define __EXAMPLE__CONFIG_H__
 
 //-------------------------------------------------------------
+// Seleccion de version
 
-#define OTA_EXAMPLE              1  // see ota_example.cpp
-#define AUTO_OTA_EXAMPLE         2  // see auto_ota_example.cpp
-#define MANUAL_EXAMPLE           3  // see manual_example.cpp
-#define PEER_TO_PEER_EXAMPLE     4  // see peer_to_peer_example.cpp
-#define CLASS_C_EXAMPLE          5  // see class_c_example.cpp
-#define CLASS_B_EXAMPLE          6  // see class_b_example.cpp
-#define FOTA_EXAMPLE             7  // see fota_example.cpp
+#define OTA_EXAMPLE 1          // see ota_example.cpp
+#define AUTO_OTA_EXAMPLE 2     // see auto_ota_example.cpp
+#define MANUAL_EXAMPLE 3       // see manual_example.cpp
+#define PEER_TO_PEER_EXAMPLE 4 // see peer_to_peer_example.cpp
+#define CLASS_C_EXAMPLE 5      // see class_c_example.cpp
+#define CLASS_B_EXAMPLE 6      // see class_b_example.cpp
+#define FOTA_EXAMPLE 7         // see fota_example.cpp
 
-#define PULSE_METER              8  // see pulse_meter.cpp
-#define LUMINARY								 9	// see luminary.cpp
+#define PULSE_METER 8 // see pulse_meter.cpp
+#define LUMINARY 9    // see luminary.cpp
 
 // the active example is the one that will be compiled
 #if !defined(ACTIVE_EXAMPLE)
-#define ACTIVE_EXAMPLE  LUMINARY
+#define ACTIVE_EXAMPLE LUMINARY
 #endif
 
 // the active channel plan is the one that will be compiled
@@ -33,13 +34,11 @@
 #endif
 
 //-------------------------------------------------------------
-// actives generation of test data
+// Habilitar Join
 
 // 0: deactivated
 // 1: activated
-#if !defined(TEST_DATA_GEN)
-#define TEST_DATA_GEN 0
-#endif
+#define ENABLE_JOIN 1
 
 //-------------------------------------------------------------
 // define App Eui, App key y Sub band
@@ -53,9 +52,27 @@
  *	0: Auto
  *	1: Yeap
  *	2: ChirpStack
- */ 
+ */
 
 #define LORA_SUB_BAND 2
 
+//-------------------------------------------------------------
+// Activar lectura de Configuracon de EEPROM
 
+// 0: deactivated
+// 1: activated
+#if !defined(READ_NON_VOLATILE)
+#define READ_NON_VOLATILE 0
+#endif
+
+//-------------------------------------------------------------
+// Actives generation of test data (para version PULSE_METER)
+
+// 0: deactivated
+// 1: activated
+#if !defined(TEST_DATA_GEN)
+#define TEST_DATA_GEN 0
+#endif
+
+//-------------------------------------------------------------
 #endif
