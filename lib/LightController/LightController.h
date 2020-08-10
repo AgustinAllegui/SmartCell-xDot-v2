@@ -10,11 +10,11 @@
 class LightController
 {
 public:
-  enum OpMode
+  enum class OpMode : uint8_t
   {
-    Manual,
-    AutoPhotoCell,
-    AutoCurve
+    Manual = 0x00,
+    AutoPhotoCell = 0x01,
+    AutoCurve = 0x02
   };
 
   LightController(PhotoCell *photoCell_, DimmingCurves *dimmingCurves_, const LightController::OpMode opMode_);
