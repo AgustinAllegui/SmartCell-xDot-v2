@@ -24,6 +24,7 @@ public:
   void setOpMode(const OpMode opMode_);
   LightController::OpMode getMode();
   void printMode();
+  float getManualDimLevel();
 
 private:
   PhotoCell *photoCell;

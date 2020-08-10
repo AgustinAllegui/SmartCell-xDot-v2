@@ -38,6 +38,11 @@ void LightController::printMode()
   }
 }
 
+float LightController::getManualDimLevel()
+{
+  return manualDimLevel;
+}
+
 void LightController::setManualDimming(float dimLevel)
 {
   if (dimLevel > 1.0f)
