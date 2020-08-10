@@ -59,6 +59,8 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
 {
     logTrace("payloadParser");
 
+    uint8_t saveBuffer[1] = {0};
+
     // [START] Parseo de payload
 
     switch (RxBuffer[0])
@@ -67,12 +69,24 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
         logInfo("Switching to Curve %u", RxBuffer[1]);
         dimmingCurves.selectCurve(RxBuffer[1]);
         lightController.setOpMode(LightController::AutoCurve);
+
+        //save config
+        saveBuffer[1] = LightController::AutoCurve;
+        dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
+        saveBuffer[1] = dimmingCurves.getCurrentCurve();
+        dot->nvmWrite(DIR_CURVE, saveBuffer, 1);
         break;
 
     case 'D': // Set manual dimming
         logInfo("Switching to Manual %u%", RxBuffer[1]);
         lightController.setManualDimming(static_cast<float>(RxBuffer[1]) / 100);
         lightController.setOpMode(LightController::Manual);
+
+        //save config
+        saveBuffer[1] = LightController::Manual;
+        dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
+        saveBuffer[1] = dimmingCurves.getCurrentCurve();
+        dot->nvmWrite(DIR_MANUAL_DIMMING, saveBuffer, 1);
         break;
 
     case 'M': // Set mode
@@ -81,14 +95,20 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
         case 0x00:
             logInfo("Switch to mode Manual");
             lightController.setOpMode(LightController::Manual);
+            saveBuffer[1] = LightController::Manual;
+            dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
             break;
         case 0x01:
             logInfo("Switch to mode PhotoCell");
             LightController.setOpMode(LightController::AutoPhotoCell);
+            saveBuffer[1] = LightController::AutoPhotoCell;
+            dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
             break;
         case 0x02:
             logInfo("Switch to mode dimming Curve");
             lightController.setOpMode(LightController::AutoCurve);
+            saveBuffer[1] = LightController::AutoCurve;
+            dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
             break;
         default:
             logError("Mode not found");
@@ -195,13 +215,18 @@ int main()
     logInfo("LUMINARY version");
     logInfo("========================");
 
+    // read config
+#if ENABLE_READ_NON_VOLATILE == 1
+
+#endif
+
     // Initial delay
     srand(photoCell.read(1));        // Iniciamos la semilla de numeros aleatorios leyendo la luz
     wait_us((rand() % 21) * 100000); // esperamos un tiempo aleatorio (entre 0 y 2s) antes de mandar el join
 
 #if ENABLE_JOIN == 1
     // Intentamos Join y si es exitoso, sincronizar la hora.
-    join_network(32);
+    join_network(24);
     if (dot->getNetworkJoinStatus())
     {
         logInfo("Attemting to sync clock");
@@ -219,7 +244,7 @@ int main()
         // Intentamos Join y si es exitoso, sincronizar la hora.
         if (!dot->getNetworkJoinStatus())
         {
-            join_network(5);
+            join_network(8);
             if (dot->getNetworkJoinStatus())
             {
                 logInfo("Attemting to sync clock");
