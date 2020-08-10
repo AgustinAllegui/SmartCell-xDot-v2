@@ -20,6 +20,24 @@ LightController::OpMode LightController::getMode()
   return currentMode;
 }
 
+void LightController::printMode()
+{
+  switch (currentMode)
+  {
+  default:
+  case LightController::Manual:
+    logInfo("Mode ============ Manual Dimming");
+    break;
+  case LightController::AutoCurve:
+    logInfo("Mode ============ Curve %u", dimmingCurves->getCurrentCurve());
+    break;
+  case LightController::AutoPhotoCell:
+    logInfo("Mode ============ PhotoCell");
+    logInfo("lux ============= %.0f%", photoCell->getLastRead() * 100);
+    break;
+  }
+}
+
 void LightController::setManualDimming(float dimLevel)
 {
   if (dimLevel > 1.0f)

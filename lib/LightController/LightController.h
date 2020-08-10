@@ -23,6 +23,7 @@ public:
   void setManualDimming(float dimLevel);
   void setOpMode(const OpMode opMode_);
   LightController::OpMode getMode();
+  void printMode();
 
 private:
   PhotoCell *photoCell;
