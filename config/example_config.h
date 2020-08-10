@@ -61,13 +61,22 @@
 #define LORA_SUB_BAND 2
 
 //-------------------------------------------------------------
-// Activar lectura de Configuracon de EEPROM
+// Activar lectura de Configuracon de memoria no volatil
 
 // 0: deactivated
 // 1: activated
-#if !defined(READ_NON_VOLATILE)
-#define READ_NON_VOLATILE 0
+#if !defined(ENABLE_READ_NON_VOLATILE)
+#define ENABLE_READ_NON_VOLATILE 0
 #endif
+
+//-------------------------------------------------------------
+// Direcciones en memoria no volatil
+
+#define DIR_LOOP_DELAY 0x00
+#define DIR_OP_MODE 0x01
+#define DIR_CURVE 0x02
+#define DIR_MANUAL_DIMMING 0x03
+
 
 //-------------------------------------------------------------
 // Actives generation of test data (para version PULSE_METER)
