@@ -73,9 +73,9 @@
 // Direcciones en memoria no volatil
 
 #define DIR_LOOP_DELAY 0x00
-#define DIR_OP_MODE 0x01
-#define DIR_CURVE 0x02
-#define DIR_MANUAL_DIMMING 0x03
+#define DIR_OP_MODE 0x02
+#define DIR_CURVE 0x03
+#define DIR_MANUAL_DIMMING 0x04
 
 
 //-------------------------------------------------------------

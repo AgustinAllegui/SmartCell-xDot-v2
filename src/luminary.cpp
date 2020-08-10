@@ -50,7 +50,7 @@ LightController(&photoCell, &dimmingCurves, LightController::Manual);
 LightOutput lightOutput(PB_2, PB_0);
 
 // otras variables
-unsigned int loopDelay = 10; // amount of seconds between loops
+uint16_t loopDelay = 10; // amount of seconds between loops
 bool bypassLoopDelay = false;
 
 // [END] Luminary global
@@ -71,9 +71,9 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
         lightController.setOpMode(LightController::AutoCurve);
 
         //save config
-        saveBuffer[1] = LightController::AutoCurve;
+        saveBuffer[0] = LightController::AutoCurve;
         dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
-        saveBuffer[1] = dimmingCurves.getCurrentCurve();
+        saveBuffer[0] = dimmingCurves.getCurrentCurve();
         dot->nvmWrite(DIR_CURVE, saveBuffer, 1);
         break;
 
@@ -83,9 +83,9 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
         lightController.setOpMode(LightController::Manual);
 
         //save config
-        saveBuffer[1] = LightController::Manual;
+        saveBuffer[0] = LightController::Manual;
         dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
-        saveBuffer[1] = dimmingCurves.getCurrentCurve();
+        saveBuffer[0] = dimmingCurves.getCurrentCurve();
         dot->nvmWrite(DIR_MANUAL_DIMMING, saveBuffer, 1);
         break;
 
@@ -95,25 +95,33 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
         case 0x00:
             logInfo("Switch to mode Manual");
             lightController.setOpMode(LightController::Manual);
-            saveBuffer[1] = LightController::Manual;
+            saveBuffer[0] = LightController::Manual;
             dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
             break;
         case 0x01:
             logInfo("Switch to mode PhotoCell");
             LightController.setOpMode(LightController::AutoPhotoCell);
-            saveBuffer[1] = LightController::AutoPhotoCell;
+            saveBuffer[0] = LightController::AutoPhotoCell;
             dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
             break;
         case 0x02:
             logInfo("Switch to mode dimming Curve");
             lightController.setOpMode(LightController::AutoCurve);
-            saveBuffer[1] = LightController::AutoCurve;
+            saveBuffer[0] = LightController::AutoCurve;
             dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
             break;
         default:
             logError("Mode not found");
             break;
         }
+        break;
+
+    case 'T':
+        uint16_t aux = static_cast<uint16_t>(RxBuffer[1]) << 8;
+        aux += RxBuffer[2];
+        logInfo("Changing loop delay to %u seconds", aux);
+        loopDelay = aux;
+        dot->nvmWrite(DIR_LOOP_DELAY, &RxBuffer[1], 2);
         break;
 
     default:
@@ -304,7 +312,7 @@ int main()
         // it must be waiting for data from the gateway
 
         logInfo("waiting for %us", loopDelay);
-        for (unsigned int i = 0; i < loopDelay; i++)
+        for (uint16_t i = 0; i < loopDelay; i++)
         {
             if (bypassLoopDelay)
             {
