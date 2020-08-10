@@ -25,13 +25,13 @@ void LightController::printMode()
   switch (currentMode)
   {
   default:
-  case LightController::Manual:
+  case OpMode::Manual:
     logInfo("Mode ============ Manual Dimming");
     break;
-  case LightController::AutoCurve:
+  case OpMode::AutoCurve:
     logInfo("Mode ============ Curve %u", dimmingCurves->getCurrentCurve());
     break;
-  case LightController::AutoPhotoCell:
+  case OpMode::AutoPhotoCell:
     logInfo("Mode ============ PhotoCell");
     logInfo("lux ============= %.0f%", photoCell->getLastRead() * 100);
     break;
@@ -58,15 +58,15 @@ float LightController::getDimming(const uint8_t hour)
   switch (currentMode)
   {
   default:
-  case LightController::Manual:
+  case OpMode::Manual:
     return manualDimLevel;
     break;
 
-  case LightController::AutoPhotoCell:
+  case OpMode::AutoPhotoCell:
     return (photoCell->shouldBeOn() ? 1.0f : 0.0f);
     break;
 
-  case LightController::AutoCurve:
+  case OpMode::AutoCurve:
     return dimmingCurves->getDimming(hour);
     break;
   }

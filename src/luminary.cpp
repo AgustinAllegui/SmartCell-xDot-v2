@@ -46,7 +46,7 @@ DigitalOut led2(PA_5);
 CurrentSensor currentSensor(PB_12);
 PhotoCell photoCell(PB_13, 0.65, 0.7);
 DimmingCurves dimmingCurves;
-LightController(&photoCell, &dimmingCurves, LightController::Manual);
+LightController lightController(&photoCell, &dimmingCurves, LightController::OpMode::Manual);
 LightOutput lightOutput(PB_2, PB_0);
 
 // otras variables
@@ -68,10 +68,10 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
     case 'C': // Cambio de curva de dimming
         logInfo("Switching to Curve %u", RxBuffer[1]);
         dimmingCurves.selectCurve(RxBuffer[1]);
-        lightController.setOpMode(LightController::AutoCurve);
+        lightController.setOpMode(LightController::OpMode::AutoCurve);
 
         //save config
-        saveBuffer[0] = LightController::AutoCurve;
+        saveBuffer[0] = static_cast<uint8_t>(LightController::OpMode::AutoCurve);
         dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
         saveBuffer[0] = dimmingCurves.getCurrentCurve();
         dot->nvmWrite(DIR_CURVE, saveBuffer, 1);
@@ -80,10 +80,10 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
     case 'D': // Set manual dimming
         logInfo("Switching to Manual %u%", RxBuffer[1]);
         lightController.setManualDimming(static_cast<float>(RxBuffer[1]) / 100);
-        lightController.setOpMode(LightController::Manual);
+        lightController.setOpMode(LightController::OpMode::Manual);
 
         //save config
-        saveBuffer[0] = LightController::Manual;
+        saveBuffer[0] = static_cast<uint8_t>(LightController::OpMode::Manual);
         dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
         saveBuffer[0] = static_cast<uint8_t>(lightController.getManualDimLevel() * 100);
         dot->nvmWrite(DIR_MANUAL_DIMMING, saveBuffer, 1);
@@ -94,20 +94,20 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
         {
         case 0x00:
             logInfo("Switch to mode Manual");
-            lightController.setOpMode(LightController::Manual);
-            saveBuffer[0] = LightController::Manual;
+            lightController.setOpMode(LightController::OpMode::Manual);
+            saveBuffer[0] = static_cast<uint8_t>(LightController::OpMode::Manual);
             dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
             break;
         case 0x01:
             logInfo("Switch to mode PhotoCell");
-            LightController.setOpMode(LightController::AutoPhotoCell);
-            saveBuffer[0] = LightController::AutoPhotoCell;
+            lightController.setOpMode(LightController::OpMode::AutoPhotoCell);
+            saveBuffer[0] = static_cast<uint8_t>(LightController::OpMode::AutoPhotoCell);
             dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
             break;
         case 0x02:
             logInfo("Switch to mode dimming Curve");
-            lightController.setOpMode(LightController::AutoCurve);
-            saveBuffer[0] = LightController::AutoCurve;
+            lightController.setOpMode(LightController::OpMode::AutoCurve);
+            saveBuffer[0] = static_cast<uint8_t>(LightController::OpMode::AutoCurve);
             dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
             break;
         default:
@@ -124,8 +124,6 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
         dot->nvmWrite(DIR_LOOP_DELAY, &RxBuffer[1], 2);
         break;
 
-    default:
-        logError("Command not found");
     }
 
     // bypass loop delay
@@ -235,25 +233,25 @@ int main()
     }
     else
     {
-        LogError("Failed to read saved loop delay");
+        logError("Failed to read saved loop delay");
     }
 
     // leer opMode
     if (dot->nvmRead(DIR_OP_MODE, saveBuffer, 1))
-        lightController.setOpMode(saveBuffer[0]);
+			lightController.setOpMode(static_cast<LightController::OpMode>(saveBuffer[0]));
     else
-        LogError("Failed to read saved operation mode");
+        logError("Failed to read saved operation mode");
 
     // leer current curve
     if (dot->nvmRead(DIR_CURVE, saveBuffer, 1))
         dimmingCurves.selectCurve(saveBuffer[0]);
     else
-        LogError("Failed to read saved curve index");
+        logError("Failed to read saved curve index");
 
     if (dot->nvmRead(DIR_MANUAL_DIMMING, saveBuffer, 1))
         lightController.setManualDimming(static_cast<float>(saveBuffer[0]) / 100);
     else
-        LogError("Failed to read saved manual dimming level");
+        logError("Failed to read saved manual dimming level");
 #endif
 
     // Initial delay
@@ -299,7 +297,7 @@ int main()
 
         // set output
         struct tm *timeStruct;
-        timeStruct = gmtime(currentTimestamp);
+        timeStruct = localtime(&currentTimestamp);
 
         float dimming = lightController.getDimming(timeStruct->tm_hour);
         lightOutput.setOutput(dimming);
@@ -313,18 +311,18 @@ int main()
         logInfo("Is Joined ======= %s", dot->getNetworkJoinStatus() ? "true" : "false");
         lightController.printMode();
         logInfo("Dimming ========= %.0f%", dimming * 100);
-        logInfo("Power =========== %.2fW", current);
+        logInfo("Power =========== %.2fW", power);
         logInfo("Period ========== %us", loopDelay);
 
         // prepare payload
         if (dot->getNetworkJoinStatus())
         {
             tx_data.clear();
-            tx_data.push_back(reinterpret_cast<uint8_t>('S'));
+            tx_data.push_back('S');
 
             uint16_t aux16 = static_cast<uint16_t>(power);
-            tx_data.push_back(static_cast<uint8_t>(power >> 8));
-            tx_data.push_back(static_cast<uint8_t>(power));
+            tx_data.push_back(static_cast<uint8_t>(aux16 >> 8));
+            tx_data.push_back(static_cast<uint8_t>(aux16));
 
             tx_data.push_back(static_cast<uint8_t>(dimming * 100));
         }

@@ -4,6 +4,7 @@
 #define _LIGHT_CONTROLLER_H_
 
 #include "mbed.h"
+#include "MTSLog.h"
 #include "PhotoCell.h"
 #include "DimmingCurves.h"
 
