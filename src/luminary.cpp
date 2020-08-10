@@ -8,6 +8,9 @@
 
 #include "CurrentSensor.h"
 #include "DimmingCurves.h"
+#include "PhotoCell.h"
+#include "LightController.h"
+#include "LightOutput.h"
 
 // [STOP] Luminary Includes
 
@@ -39,18 +42,69 @@ Serial pc(USBTX, USBRX);
 DigitalOut led1(PA_4);
 DigitalOut led2(PA_5);
 
+// Declaracion componentes
 CurrentSensor currentSensor(PB_12);
+PhotoCell photoCell(PB_13, 0.65, 0.7);
+DimmingCurves dimmingCurves;
+LightController(&photoCell, &dimmingCurves, LightController::Manual);
+LightOutput lightOutput(PB_2, PB_0);
+
+// otras variables
+unsigned int loopDelay = 10; // amount of seconds between loops
+bool bypassLoopDelay = false;
+
+// [END] Luminary global
 
 void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
 {
-    logTrace("SmartCell::payloadParser");
-    logDebug("Into Payload Parser");
+    logTrace("payloadParser");
 
-    logInfo("Rx %d bytes", RxBufferSize);
-    logInfo("First letter %c", RxBuffer[0]);
+    // [START] Parseo de payload
+
+    switch (RxBuffer[0])
+    {
+    case 'C': // Cambio de curva de dimming
+        logInfo("Switching to Curve %u", RxBuffer[1]);
+        dimmingCurves.selectCurve(RxBuffer[1]);
+        lightController.setOpMode(LightController::AutoCurve);
+        break;
+
+    case 'D': // Set manual dimming
+        logInfo("Switching to Manual %u%", RxBuffer[1]);
+        lightController.setManualDimming(static_cast<float>(RxBuffer[1]) / 100);
+        lightController.setOpMode(LightController::Manual);
+        break;
+
+    case 'M': // Set mode
+        switch (RxBuffer[1])
+        {
+        case 0x00:
+            logInfo("Switch to mode Manual");
+            lightController.setOpMode(LightController::Manual);
+            break;
+        case 0x01:
+            logInfo("Switch to mode PhotoCell");
+            LightController.setOpMode(LightController::AutoPhotoCell);
+            break;
+        case 0x02:
+            logInfo("Switch to mode dimming Curve");
+            lightController.setOpMode(LightController::AutoCurve);
+            break;
+        default:
+            logError("Mode not found");
+            break;
+        }
+        break;
+
+    default:
+        logError("Command not found");
+    }
+
+    // bypass loop delay
+    bypassLoopDelay = true;
+
+    // [STOP] Parseo de payload
 }
-
-// [END] Luminary global
 
 int main()
 {
@@ -141,13 +195,19 @@ int main()
     logInfo("LUMINARY version");
     logInfo("========================");
 
-    // Enceder Led
-    led1 = 1;
-		
-		DimmingCurves dimmingCurves;
-		dimmingCurves.selectCurve(1);
-		uint8_t hour = 0;
-		
+    // Initial delay
+    srand(photoCell.read(1));        // Iniciamos la semilla de numeros aleatorios leyendo la luz
+    wait_us((rand() % 21) * 100000); // esperamos un tiempo aleatorio (entre 0 y 2s) antes de mandar el join
+
+#if ENABLE_JOIN == 1
+    // Intentamos Join y si es exitoso, sincronizar la hora.
+    join_network(32);
+    if (dot->getNetworkJoinStatus())
+    {
+        logInfo("Attemting to sync clock");
+        set_time((dot->getGPSTime() / 1000) + 315964800 + (TIME_ZONE * 3600));
+    }
+#endif
 
     // [END] init Luminary
 
@@ -155,31 +215,58 @@ int main()
     {
         std::vector<uint8_t> tx_data;
 
-        // join network if not joined
+#if ENABLE_JOIN == 1
+        // Intentamos Join y si es exitoso, sincronizar la hora.
         if (!dot->getNetworkJoinStatus())
         {
-            // join_network();
-            // ask for time
-            set_time((dot->getGPSTime() / 1000) + 315964800);
+            join_network(5);
+            if (dot->getNetworkJoinStatus())
+            {
+                logInfo("Attemting to sync clock");
+                set_time((dot->getGPSTime() / 1000) + 315964800 + (TIME_ZONE * 3600));
+            }
         }
-        time_t seconds = time(NULL);
-        logInfo("Current Time: UTC %s", ctime(&seconds));
+#endif
+        // Show time
+        time_t currentTimestamp = time(NULL);
+        logInfo("Current Time: %s", ctime(&currentTimestamp));
 
         // [START] Luminary Loop
+
+        // blink led
         led1 = (led1) ? 0 : 1;
 
-				
-				
-				uint8_t actualDimming = dimmingCurves.getDimming(hour);
-				hour++;
-				if(hour > 23) {
-					hour = 0;
-				}
-				
-				logInfo("Acutal curve: %u", dimmingCurves.getCurrentCurve());
-				logInfo("Actual dimming: %u", actualDimming);
-				
-				
+        // set output
+        struct tm *timeStruct;
+        timeStruct = gmtime(currentTimestamp);
+
+        float dimming = lightController.getDimming(timeStruct->tm_hour);
+        lightOutput.setOutput(dimming);
+
+        float power = currentSensor.getCurrent() * 220;
+
+        // print config
+        logInfo("========================");
+        logInfo("SmartCell configuration");
+        logInfo("========================");
+        logInfo("Is Joined ======= %s", dot->getNetworkJoinStatus() ? "true" : "false");
+        lightController.printMode();
+        logInfo("Dimming ========= %.0f%", dimming * 100);
+        logInfo("Power =========== %.2fW", current);
+        logInfo("Period ========== %us", loopDelay);
+
+        // prepare payload
+        if (dot->getNetworkJoinStatus())
+        {
+            tx_data.clear();
+            tx_data.push_back(reinterpret_cast<uint8_t>('S'));
+
+            uint16_t aux16 = static_cast<uint16_t>(power);
+            tx_data.push_back(static_cast<uint8_t>(power >> 8));
+            tx_data.push_back(static_cast<uint8_t>(power));
+
+            tx_data.push_back(static_cast<uint8_t>(dimming * 100));
+        }
 
         // [END] Luminary Loop
 
@@ -190,11 +277,17 @@ int main()
 
         // the Dot can't sleep in class C mode
         // it must be waiting for data from the gateway
-        unsigned int loopDelay = 1; // everyDelay*10 = amount of seconds between loops
-        logInfo("waiting for %u0s", loopDelay);
+
+        logInfo("waiting for %us", loopDelay);
         for (unsigned int i = 0; i < loopDelay; i++)
         {
-            wait_us(10000000);
+            if (bypassLoopDelay)
+            {
+                logInfo("Bypassing loop delay");
+                bypassLoopDelay = false;
+                break;
+            }
+            wait_us(1000000);
         }
     }
 
