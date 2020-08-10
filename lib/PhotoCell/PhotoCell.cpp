@@ -3,7 +3,7 @@
 #include "PhotoCell.h"
 
 PhotoCell::PhotoCell(PinName pin_, const float onThreshold_, const float offThreshold_)
-    : pin(pin_), lastState(false)
+    : pin(pin_), lastState(false), lastRead(0)
 {
   setThreshold(onThreshold_, offThreshold_);
 }
@@ -33,7 +33,13 @@ float PhotoCell::read(const uint8_t ammount)
     accumulator += (pin.read() / ammount);
   }
 
+  lastRead = accumulator;
   return accumulator;
+}
+
+float PhotoCell::getLastRead()
+{
+  return lastRead;
 }
 
 /*

@@ -16,6 +16,7 @@ public:
 
   bool shouldBeOn();
   float read(const uint8_t ammount = 10);
+  float getLastRead();
 
   void setThreshold(const float onThreshold_, const float offThreshold_);
 
@@ -25,6 +26,7 @@ protected:
   float offThreshold;
 
   bool lastState;
+  float lastRead;
 };
 
 #endif
