@@ -85,7 +85,7 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
         //save config
         saveBuffer[0] = LightController::Manual;
         dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
-        saveBuffer[0] = dimmingCurves.getCurrentCurve();
+        saveBuffer[0] = static_cast<uint8_t>(lightController.getManualDimLevel() * 100);
         dot->nvmWrite(DIR_MANUAL_DIMMING, saveBuffer, 1);
         break;
 
@@ -225,7 +225,35 @@ int main()
 
     // read config
 #if ENABLE_READ_NON_VOLATILE == 1
+    uint8_t saveBuffer[2] = {0, 0};
 
+    // leer loop delay
+    if (dot->nvmRead(DIR_LOOP_DELAY, saveBuffer, 2))
+    {
+        loopDelay = static_cast<uint16_t>(saveBuffer[0]) << 8;
+        loopDelay += saveBuffer[1];
+    }
+    else
+    {
+        LogError("Failed to read saved loop delay");
+    }
+
+    // leer opMode
+    if (dot->nvmRead(DIR_OP_MODE, saveBuffer, 1))
+        lightController.setOpMode(saveBuffer[0]);
+    else
+        LogError("Failed to read saved operation mode");
+
+    // leer current curve
+    if (dot->nvmRead(DIR_CURVE, saveBuffer, 1))
+        dimmingCurves.selectCurve(saveBuffer[0]);
+    else
+        LogError("Failed to read saved curve index");
+
+    if (dot->nvmRead(DIR_MANUAL_DIMMING, saveBuffer, 1))
+        lightController.setManualDimming(static_cast<float>(saveBuffer[0]) / 100);
+    else
+        LogError("Failed to read saved manual dimming level");
 #endif
 
     // Initial delay
