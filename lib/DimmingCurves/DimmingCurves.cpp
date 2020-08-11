@@ -33,7 +33,7 @@ uint8_t DimmingCurves::selectCurve(const uint8_t index)
   return currentCurve;
 }
 
-uint8_t DimmingCurves::getDimming(const uint8_t hour)
+float DimmingCurves::getDimming(const uint8_t hour)
 {
   if (hour > 23)
   {
@@ -53,5 +53,6 @@ uint8_t DimmingCurves::getDimming(const uint8_t hour)
   {
     dimming = twoValues & 0x0F;
   }
-  return dimming;
+
+  return (static_cast<float>(dimming) / 10);
 }

@@ -14,7 +14,7 @@ public:
 
   uint8_t getCurrentCurve() { return currentCurve; }
 
-  uint8_t getDimming(const uint8_t hour);
+  float getDimming(const uint8_t hour);
 
 protected:
   uint8_t currentCurve;
