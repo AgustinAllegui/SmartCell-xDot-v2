@@ -503,6 +503,16 @@
               <FilePath>config/example_config.h</FilePath>
             </File>
             <File>
+              <FileName>lora_config.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>config/lora_config.h</FilePath>
+            </File>
+            <File>
+              <FileName>version_config.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>config/version_config.h</FilePath>
+            </File>
+            <File>
               <FileName>example_config.h</FileName>
               <FileType>5</FileType>
               <FilePath>config/example_config.h</FilePath>
