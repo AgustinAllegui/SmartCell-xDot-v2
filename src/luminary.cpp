@@ -50,7 +50,7 @@ LightController lightController(&photoCell, &dimmingCurves, LightController::OpM
 LightOutput lightOutput(PB_2, PB_0);
 
 // otras variables
-uint16_t loopDelay = 10; // amount of seconds between loops
+uint16_t loopDelay = 30; // amount of seconds between loops
 bool bypassLoopDelay = false;
 
 // [END] Luminary global
@@ -123,7 +123,6 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
         loopDelay = aux;
         dot->nvmWrite(DIR_LOOP_DELAY, &RxBuffer[1], 2);
         break;
-
     }
 
     // bypass loop delay
@@ -169,7 +168,7 @@ int main()
     dot->resetNetworkSession();
 
     // make sure library logging is turned on
-    dot->setLogLevel(mts::MTSLog::INFO_LEVEL);
+    dot->setLogLevel(mts::MTSLog::DEBUG_LEVEL);
 
     // attach the custom events handler
     dot->setEvents(&events);
@@ -238,7 +237,7 @@ int main()
 
     // leer opMode
     if (dot->nvmRead(DIR_OP_MODE, saveBuffer, 1))
-			lightController.setOpMode(static_cast<LightController::OpMode>(saveBuffer[0]));
+        lightController.setOpMode(static_cast<LightController::OpMode>(saveBuffer[0]));
     else
         logError("Failed to read saved operation mode");
 
@@ -302,6 +301,7 @@ int main()
         float dimming = lightController.getDimming(timeStruct->tm_hour);
         lightOutput.setOutput(dimming);
 
+        wait_us(100000); // retardo de 100ms para que se estabilice la corriente antes de medirla
         float power = currentSensor.getCurrent() * 220;
 
         // print config
