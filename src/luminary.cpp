@@ -161,6 +161,7 @@ int main()
     assert(dot);
 
     logInfo("mbed-os library version: %d.%d.%d", MBED_MAJOR_VERSION, MBED_MINOR_VERSION, MBED_PATCH_VERSION);
+    logInfo("Promatix SmartCell version: %d.%d.%d", PROMATIX_VERSION_MAJOR, PROMATIX_VERSION_MINOR, PROMATIX_VERSION_PATCH);
 
     // start from a well-known state
     logInfo("defaulting Dot configuration");
@@ -221,8 +222,36 @@ int main()
     logInfo("========================");
 
     // read config
-#if ENABLE_READ_NON_VOLATILE == 1
-    uint8_t saveBuffer[2] = {0, 0};
+    uint8_t saveBuffer[3] = {0, 0, 0};
+
+    // leer version de firmware para la que se crearon los datos
+    // y comparar con la version actual
+    if (dot->nvmRead(DIR_PROMATIX_VERSION_MAJOR, saveBuffer, 3))
+    {
+        if ((saveBuffer[0] != PROMATIX_VERSION_MAJOR) || (saveBuffer[1] != PROMATIX_VERSION_MINOR) || (saveBuffer[2] != PROMATIX_VERSION_PATCH))
+        {
+            // la version no coincide, entonces cargar los datos por defecto
+            logInfo("Loading default values to memory");
+
+            saveBuffer[0] = PROMATIX_VERSION_MAJOR;
+            saveBuffer[1] = PROMATIX_VERSION_MINOR;
+            saveBuffer[2] = PROMATIX_VERSION_PATCH;
+            dot->nvmWrite(DIR_PROMATIX_VERSION_MAJOR, saveBuffer, 3);
+
+            saveBuffer[0] = 0x02; // loop delay cada 10 minutos
+            saveBuffer[1] = 0x58;
+            dot->nvmWrite(DIR_LOOP_DELAY, saveBuffer, 2);
+
+            saveBuffer[0] = 0x00; // Modo de operacion Manual
+            dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
+
+            saveBuffer[0] = 0x00; // Curva seleccionada 1
+            dot->nvmWrite(DIR_CURVE, saveBuffer, 1);
+
+            saveBuffer[0] = 0x64; // Dimming manual 100%
+            dot->nvmWrite(DIR_MANUAL_DIMMING, saveBuffer, 2);
+        }
+    }
 
     // leer loop delay
     if (dot->nvmRead(DIR_LOOP_DELAY, saveBuffer, 2))
@@ -237,7 +266,17 @@ int main()
 
     // leer opMode
     if (dot->nvmRead(DIR_OP_MODE, saveBuffer, 1))
-        lightController.setOpMode(static_cast<LightController::OpMode>(saveBuffer[0]));
+    {
+        // evitar configurar para curva antes de obtener la hora
+        if (static_cast<LightController::OpMode>(saveBuffer[0]) == LightController::OpMode::AutoCurve)
+        {
+            lightController.setOpMode(LightController::OpMode::Manual);
+        }
+        else
+        {
+            lightController.setOpMode(static_cast<LightController::OpMode>(saveBuffer[0]));
+        }
+    }
     else
         logError("Failed to read saved operation mode");
 
@@ -251,7 +290,6 @@ int main()
         lightController.setManualDimming(static_cast<float>(saveBuffer[0]) / 100);
     else
         logError("Failed to read saved manual dimming level");
-#endif
 
     // Initial delay
     srand(photoCell.read(1));        // Iniciamos la semilla de numeros aleatorios leyendo la luz
@@ -284,6 +322,7 @@ int main()
                 set_time((dot->getGPSTime() / 1000) + 315964800 + (TIME_ZONE * 3600));
             }
         }
+
 #endif
         // Show time
         time_t currentTimestamp = time(NULL);
@@ -298,6 +337,15 @@ int main()
         struct tm *timeStruct;
         timeStruct = localtime(&currentTimestamp);
 
+        // si esta en hora, recuperar modo curvas si esta guardado
+        if (timeStruct->tm_year > 118)
+        {
+            if (dot->nvmRead(DIR_OP_MODE, saveBuffer, 1))
+            {
+                lightController.setOpMode(static_cast<LightController::OpMode>(saveBuffer[0]));
+            }
+        }
+
         float dimming = lightController.getDimming(timeStruct->tm_hour);
         lightOutput.setOutput(dimming);
 
@@ -308,9 +356,9 @@ int main()
         logInfo("========================");
         logInfo("SmartCell configuration");
         logInfo("========================");
-        logInfo("Is Joined ======= %s", dot->getNetworkJoinStatus() ? "true" : "false");
+        logInfo("Has Joined ====== %s", dot->getNetworkJoinStatus() ? "true" : "false");
         lightController.printMode();
-        logInfo("Dimming ========= %.0f%", dimming * 100);
+        logInfo("Dimming ========= %.0f %", dimming * 100);
         logInfo("Power =========== %.2fW", power);
         logInfo("Period ========== %us", loopDelay);
 
