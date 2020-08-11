@@ -22,15 +22,20 @@ void PhotoCell::setThreshold(const float onThreshold_, const float offThreshold_
 }
 
 /*
- *  Lee el valor de la fotocelda
- *  Realiza un primedio de 10 puntos
+ *  Lee el valor la cantidad de luz en el ambiente
+ *  devuelve un valor entre 1 y 0.
+ *  1 es mucha luz,
+ *  2 es oscuridad
+ *  Realiza un primedio de n puntos
  */
 float PhotoCell::read(const uint8_t ammount)
 {
   float accumulator = 0;
-  for (uint8_t i = 1; i < ammount; i++)
+  for (uint8_t i = 0; i < ammount; i++)
   {
-    accumulator += (pin.read() / ammount);
+    float value = pin.read();
+    logDebug("-Valor medido %f", value);
+    accumulator += (value / ammount);
   }
 
   lastRead = accumulator;
@@ -46,12 +51,15 @@ float PhotoCell::getLastRead()
  * Devuelve true si la fotocelda indica 
  * que deberia encenderse la luz.
  */
+
+//! dar vuelta. prende cuando hay luz
 bool PhotoCell::shouldBeOn()
 {
-  float currentRead = read();
+  float currentRead = read(10);
+  logDebug("-Promedio %f", currentRead);
   if (lastState)
   {
-    if (currentRead < offThreshold)
+    if (currentRead > offThreshold)
     {
       lastState = false;
       return false;
@@ -64,7 +72,7 @@ bool PhotoCell::shouldBeOn()
   }
   else
   {
-    if (currentRead > onThreshold)
+    if (currentRead < onThreshold)
     {
       lastState = true;
       return true;

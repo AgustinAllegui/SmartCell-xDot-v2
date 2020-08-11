@@ -4,6 +4,7 @@
 #define _PHOTO_CELL_H_
 
 #include "mbed.h"
+#include "MTSLog.h"
 
 //recomended Thresholds
 // const float thr_l = 0.65;	// umbral de encendido
