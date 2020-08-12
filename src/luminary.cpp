@@ -53,6 +53,8 @@ LightOutput lightOutput(PB_2, PB_0);
 uint16_t loopDelay = 30; // amount of seconds between loops
 bool bypassLoopDelay = false;
 
+Timer lastMesureTimer; // timer para medicion de energia
+
 // [END] Luminary global
 
 void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
@@ -271,6 +273,7 @@ int main()
         if (static_cast<LightController::OpMode>(saveBuffer[0]) == LightController::OpMode::AutoCurve)
         {
             lightController.setOpMode(LightController::OpMode::Manual);
+						lightController.setManualDimming(1);
         }
         else
         {
@@ -305,6 +308,9 @@ int main()
     }
 #endif
 
+    // iniciar timer de medicion de energia
+    lastMesureTimer.start();
+
     // [END] init Luminary
 
     while (true)
@@ -338,7 +344,7 @@ int main()
         timeStruct = localtime(&currentTimestamp);
 
         // si esta en hora, recuperar modo curvas si esta guardado
-        if (timeStruct->tm_year > 118)
+        if (timeStruct->tm_year > 118) // esta en hora si el año es mayor a 2018
         {
             if (dot->nvmRead(DIR_OP_MODE, saveBuffer, 1))
             {
@@ -346,11 +352,18 @@ int main()
             }
         }
 
+        // Energy calculation;
+        float power = currentSensor.getCurrent() * 220;
+        float timeSinceLastMesure = lastMesureTimer.read();
+        lastMesureTimer.reset();
+        float energy = (power * timeSinceLastMesure) / 3600;
+
         float dimming = lightController.getDimming(timeStruct->tm_hour);
         lightOutput.setOutput(dimming);
 
-        wait_us(100000); // retardo de 100ms para que se estabilice la corriente antes de medirla
-        float power = currentSensor.getCurrent() * 220;
+        // medicion de energia
+        wait_us(500000); // retardo de 100ms para que se estabilice la corriente antes de medirla
+        power = currentSensor.getCurrent() * 220;
 
         // print config
         logInfo("========================");
@@ -360,6 +373,8 @@ int main()
         lightController.printMode();
         logInfo("Dimming ========= %.0f %", dimming * 100);
         logInfo("Power =========== %.2fW", power);
+        logInfo("Energy ========== %.2fkW", energy);
+        logInfo("Last mesure ===== %.0f seconds ago", timeSinceLastMesure);
         logInfo("Period ========== %us", loopDelay);
 
         // prepare payload
@@ -373,6 +388,10 @@ int main()
             tx_data.push_back(static_cast<uint8_t>(aux16));
 
             tx_data.push_back(static_cast<uint8_t>(dimming * 100));
+
+            aux16 = static_cast<uint16_t>(energy);
+            tx_data.push_back(static_cast<uint8_t>(aux16 >> 8));
+            tx_data.push_back(static_cast<uint8_t>(aux16));
         }
 
         // [END] Luminary Loop

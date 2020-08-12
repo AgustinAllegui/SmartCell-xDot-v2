@@ -8,8 +8,8 @@
 // Version
 
 #define PROMATIX_VERSION_MAJOR 2
-#define PROMATIX_VERSION_MINOR 0
-#define PROMATIX_VERSION_PATCH 0
+#define PROMATIX_VERSION_MINOR 1
+#define PROMATIX_VERSION_PATCH 1
 
 //-------------------------------------------------------------
 // Direcciones en memoria no volatil
