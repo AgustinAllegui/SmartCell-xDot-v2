@@ -25,6 +25,7 @@
 
 //-------------------------------------------------------------
 // Time zone
+//! revisar si al sincronizarse toma la hora del gateway segun la zona horaria o toma siempre la UTC
 #define TIME_ZONE -3
 
 //-------------------------------------------------------------
