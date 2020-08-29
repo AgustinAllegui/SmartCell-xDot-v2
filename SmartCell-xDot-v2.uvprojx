@@ -393,6 +393,16 @@
               <FilePath>inc/dot_util.h</FilePath>
             </File>
             <File>
+              <FileName>SmartCell_util.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>src/SmartCell_util.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>SmartCell_util.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>inc/SmartCell_util.h</FilePath>
+            </File>
+            <File>
               <FileName>pulse_meter.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>src/pulse_meter.cpp</FilePath>
@@ -410,12 +420,12 @@
             <File>
               <FileName>EventSlot.h</FileName>
               <FileType>5</FileType>
-              <FilePath>.\inc\EventSlot.h</FilePath>
+              <FilePath>inc/EventSlot.h</FilePath>
             </File>
             <File>
               <FileName>EventSlot.cpp</FileName>
               <FileType>8</FileType>
-              <FilePath>.\src\EventSlot.cpp</FilePath>
+              <FilePath>src/EventSlot.cpp</FilePath>
             </File>
           </Files>
         </Group>
