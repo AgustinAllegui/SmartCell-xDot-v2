@@ -33,3 +33,23 @@
 #endif
 
 #endif
+
+//-------------------------------------------------------------
+// secuencias para los leds
+
+#define LED_SEQUENCE_OK \
+    {                   \
+        0.2, 1.7        \
+    }
+#define LED_SEQUENCE_ERROR_1 \
+    {                        \
+        0.2, 0.2, 0.2, 1.4   \
+    }
+#define LED_SEQUENCE_ERROR_2         \
+    {                                \
+        0.2, 0.2, 0.2, 0.2, 0.2, 1.0 \
+    }
+#define LED_SEQUENCE_ERROR_3                   \
+    {                                          \
+        0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.6 \
+    }
