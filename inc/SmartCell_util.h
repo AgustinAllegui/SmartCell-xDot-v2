@@ -78,7 +78,7 @@ void printTime();
  * @param power valor de potencia (>0)
  * @param energy valor de potencia (>0)
  */
-void send_lightStatus(const float dimming, const float power, const float energy);
+bool send_lightStatus(const float dimming, const float power, const float energy);
 
 /**
  * @brief Si esta unico, envia las configuraciones actuales del nodo.
@@ -89,12 +89,12 @@ void send_lightStatus(const float dimming, const float power, const float energy
  * @param manualDimming Nivel de dimming manual.
  * @param loopDelay Retardo entre ciclos [segundos]
  */
-void send_smartCellConfig(const uint8_t lightMode, const uint8_t manualDimming, const uint16_t loopDelay);
+bool send_smartCellConfig(const uint8_t lightMode, const uint8_t manualDimming, const uint16_t loopDelay);
 
 /**
  * @brief Si esta unico, envia el timestamp actual.
  * 
  */
-void send_currentTime();
+bool send_currentTime();
 
 #endif

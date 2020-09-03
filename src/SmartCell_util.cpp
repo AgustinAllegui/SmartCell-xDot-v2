@@ -51,7 +51,7 @@ void printTime()
 
 //------------------------------------------------------------------
 
-void send_lightStatus(const float dimming, const float power, const float energy)
+bool send_lightStatus(const float dimming, const float power, const float energy)
 {
   // Solo ejecutar si se esta unido a la red lora
   if (dot->getNetworkJoinStatus())
@@ -73,11 +73,12 @@ void send_lightStatus(const float dimming, const float power, const float energy
     tx_data.push_back(static_cast<uint8_t>(aux16));
 
     // enviar el buffer
-    send_data(tx_data);
+    return (send_data(tx_data) == mDot::MDOT_OK);
   }
+  return false;
 }
 
-void send_smartCellConfig(const uint8_t lightMode, const uint8_t manualDimming, const uint16_t loopDelay)
+bool send_smartCellConfig(const uint8_t lightMode, const uint8_t manualDimming, const uint16_t loopDelay)
 {
   // Solo ejecutar si se esta unido a la red lora
   if (dot->getNetworkJoinStatus())
@@ -94,11 +95,12 @@ void send_smartCellConfig(const uint8_t lightMode, const uint8_t manualDimming, 
     tx_data.push_back(static_cast<uint8_t>(loopDelay & 0x00FF));
 
     // enviar el buffer
-    send_data(tx_data);
+    return (send_data(tx_data) == mDot::MDOT_OK);
   }
+  return false;
 }
 
-void send_currentTime()
+bool send_currentTime()
 {
   // Solo ejecutar si se esta unido a la red lora
   if (dot->getNetworkJoinStatus())
@@ -118,6 +120,7 @@ void send_currentTime()
     tx_data.push_back(static_cast<uint8_t>(currentTimestamp & 0x000000FF));
 
     // enviar el buffer
-    send_data(tx_data);
+    return (send_data(tx_data) == mDot::MDOT_OK);
   }
+  return false;
 }
