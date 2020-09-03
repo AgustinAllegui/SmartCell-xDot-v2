@@ -12,7 +12,11 @@
 #include "LightController.h"
 #include "LightOutput.h"
 
-// [STOP] Luminary Includes
+#include "SmartCell_util.h"
+
+#include "LedHandler.h"
+
+// [END] Luminary Includes
 
 /////////////////////////////////////////////////////////////
 // * these options must match the settings on your gateway //
@@ -39,8 +43,8 @@ lora::ChannelPlan *plan = NULL;
 Serial pc(USBTX, USBRX);
 
 // [START] Luminary global
-DigitalOut led1(PA_4);
-DigitalOut led2(PA_5);
+LedHandler ledStatus(PA_4, true); // led indicador de estado
+LedHandler ledLora(PA_5, true);   // led Indicador de alimentacion
 
 // Declaracion componentes
 CurrentSensor currentSensor(PB_12);
@@ -56,6 +60,8 @@ bool bypassLoopDelay = false;
 Timer lastMesureTimer; // timer para medicion de energia
 
 // [END] Luminary global
+
+// [START] Luminary global
 
 void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
 {
@@ -223,6 +229,10 @@ int main()
     logInfo("LUMINARY version");
     logInfo("========================");
 
+    // encender led lora hasta que haya join
+    ledStatus.setCicle(LED_SEQUENCE_OK);
+    ledLora.setCicle(LED_SEQUENCE_ERROR_1);
+
     // read config
     uint8_t saveBuffer[3] = {0, 0, 0};
 
@@ -244,13 +254,13 @@ int main()
             saveBuffer[1] = 0x58;
             dot->nvmWrite(DIR_LOOP_DELAY, saveBuffer, 2);
 
-            saveBuffer[0] = 0x00; // Modo de operacion Manual
+            saveBuffer[0] = 0x01; // Modo de operacion Fotocelda
             dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
 
             saveBuffer[0] = 0x00; // Curva seleccionada 1
             dot->nvmWrite(DIR_CURVE, saveBuffer, 1);
 
-            saveBuffer[0] = 0x64; // Dimming manual 100%
+            saveBuffer[0] = 100; // Dimming manual 100%
             dot->nvmWrite(DIR_MANUAL_DIMMING, saveBuffer, 2);
         }
     }
@@ -262,9 +272,13 @@ int main()
         loopDelay += saveBuffer[1];
     }
     else
-    {
         logError("Failed to read saved loop delay");
-    }
+
+    // leer nivel de dimming manual
+    if (dot->nvmRead(DIR_MANUAL_DIMMING, saveBuffer, 1))
+        lightController.setManualDimming(static_cast<float>(saveBuffer[0]) / 100);
+    else
+        logError("Failed to read saved manual dimming level");
 
     // leer opMode
     if (dot->nvmRead(DIR_OP_MODE, saveBuffer, 1))
@@ -272,8 +286,7 @@ int main()
         // evitar configurar para curva antes de obtener la hora
         if (static_cast<LightController::OpMode>(saveBuffer[0]) == LightController::OpMode::AutoCurve)
         {
-            lightController.setOpMode(LightController::OpMode::Manual);
-						lightController.setManualDimming(1);
+            lightController.setOpMode(LightController::OpMode::AutoPhotoCell);
         }
         else
         {
@@ -289,23 +302,14 @@ int main()
     else
         logError("Failed to read saved curve index");
 
-    if (dot->nvmRead(DIR_MANUAL_DIMMING, saveBuffer, 1))
-        lightController.setManualDimming(static_cast<float>(saveBuffer[0]) / 100);
-    else
-        logError("Failed to read saved manual dimming level");
-
     // Initial delay
-    srand(photoCell.read(1));        // Iniciamos la semilla de numeros aleatorios leyendo la luz
-    wait_us((rand() % 21) * 100000); // esperamos un tiempo aleatorio (entre 0 y 2s) antes de mandar el join
+    srand(photoCell.read(1));               // Iniciamos la semilla de numeros aleatorios leyendo la luz
+    wait_us((rand() % (100 + 1)) * 100000); // esperamos un tiempo aleatorio (entre 0 y 10s) antes de mandar el join
 
 #if ENABLE_JOIN == 1
-    // Intentamos Join y si es exitoso, sincronizar la hora.
+        // Intentamos Join y si es exitoso
     join_network(24);
-    if (dot->getNetworkJoinStatus())
-    {
-        logInfo("Attemting to sync clock");
-        set_time((dot->getGPSTime() / 1000) + 315964800 + (TIME_ZONE * 3600));
-    }
+
 #endif
 
     // iniciar timer de medicion de energia
@@ -315,36 +319,30 @@ int main()
 
     while (true)
     {
-        std::vector<uint8_t> tx_data;
+        // [START] Luminary Loop
 
 #if ENABLE_JOIN == 1
-        // Intentamos Join y si es exitoso, sincronizar la hora.
+        // Intentamos Join.
         if (!dot->getNetworkJoinStatus())
         {
             join_network(8);
-            if (dot->getNetworkJoinStatus())
-            {
-                logInfo("Attemting to sync clock");
-                set_time((dot->getGPSTime() / 1000) + 315964800 + (TIME_ZONE * 3600));
-            }
         }
 
 #endif
         // Show time
-        time_t currentTimestamp = time(NULL);
-        logInfo("Current Time: %s", ctime(&currentTimestamp));
+        void printTime();
 
-        // [START] Luminary Loop
-
-        // blink led
-        led1 = (led1) ? 0 : 1;
-
-        // set output
-        struct tm *timeStruct;
-        timeStruct = localtime(&currentTimestamp);
+#if ENABLE_JOIN == 1
+        // Sincronizar hora.
+        if (!timeIsSynced()) //! agregar sincronizacion periodica
+        {
+            logInfo("Attemting to sync clock");
+            syncTime(5, TIME_ZONE);
+        }
+#endif
 
         // si esta en hora, recuperar modo curvas si esta guardado
-        if (timeStruct->tm_year > 118) // esta en hora si el año es mayor a 2018
+        if (timeIsSynced())
         {
             if (dot->nvmRead(DIR_OP_MODE, saveBuffer, 1))
             {
@@ -352,17 +350,18 @@ int main()
             }
         }
 
-        // Energy calculation;
+        // Energy calculation
         float power = currentSensor.getCurrent() * 220;
         float timeSinceLastMesure = lastMesureTimer.read();
         lastMesureTimer.reset();
         float energy = (power * timeSinceLastMesure) / 3600;
 
-        float dimming = lightController.getDimming(timeStruct->tm_hour);
+        // Cambiar el nivel de dimming segun la hora
+        float dimming = lightController.getDimming(getHour());
         lightOutput.setOutput(dimming);
 
-        // medicion de energia
-        wait_us(500000); // retardo de 100ms para que se estabilice la corriente antes de medirla
+        // medicion de potencia
+        wait_us(500000); // retardo de 500ms para que se estabilice la corriente antes de medirla
         power = currentSensor.getCurrent() * 220;
 
         // print config
@@ -377,29 +376,44 @@ int main()
         logInfo("Last mesure ===== %.0f seconds ago", timeSinceLastMesure);
         logInfo("Period ========== %us", loopDelay);
 
-        // prepare payload
+        // check if error
+        if (dimming == 0)
+        {
+            if (power == 0)
+            {
+                ledStatus.setCicle(LED_SEQUENCE_OK);
+            }
+            else
+            {
+                ledStatus.setCicle(LED_SEQUENCE_ERROR_2);
+            }
+        }
+        else
+        {
+            if (power == 0)
+            {
+                ledStatus.setCicle(LED_SEQUENCE_ERROR_1);
+            }
+        }
+
+        // Send Light Status
         if (dot->getNetworkJoinStatus())
         {
-            tx_data.clear();
-            tx_data.push_back('S');
-
-            uint16_t aux16 = static_cast<uint16_t>(power);
-            tx_data.push_back(static_cast<uint8_t>(aux16 >> 8));
-            tx_data.push_back(static_cast<uint8_t>(aux16));
-
-            tx_data.push_back(static_cast<uint8_t>(dimming * 100));
-
-            aux16 = static_cast<uint16_t>(energy);
-            tx_data.push_back(static_cast<uint8_t>(aux16 >> 8));
-            tx_data.push_back(static_cast<uint8_t>(aux16));
+            if (send_lightStatus(dimming, power, energy))
+            {
+                ledLora.setCicle(LED_SEQUENCE_OK);
+            }
+            else
+            {
+                ledLora.setCicle(LED_SEQUENCE_ERROR_2);
+            }
+        }
+        else
+        {
+            ledLora.setCicle(LED_SEQUENCE_ERROR_1);
         }
 
         // [END] Luminary Loop
-
-        if (dot->getNetworkJoinStatus())
-        {
-            send_data(tx_data);
-        }
 
         // the Dot can't sleep in class C mode
         // it must be waiting for data from the gateway
