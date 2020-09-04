@@ -43,8 +43,8 @@ lora::ChannelPlan *plan = NULL;
 Serial pc(USBTX, USBRX);
 
 // [START] Luminary global
-LedHandler ledStatus(PA_4, true); // led indicador de estado
-LedHandler ledLora(PA_5, true);   // led Indicador de alimentacion
+LedHandler ledStatus(PA_4, false); // led indicador de estado
+LedHandler ledLora(PA_5, false);   // led Indicador de alimentacion
 
 // Declaracion componentes
 CurrentSensor currentSensor(PB_12);
@@ -444,24 +444,15 @@ int main()
         logInfo("Period ========== %us", loopDelay);
 
         // check if error
-        if (dimming == 0)
+        if (dimming > 0)
         {
-            if (power == 0)
-            {
+            if (power > 0)
                 ledStatus.setCicle(LED_SEQUENCE_OK);
-            }
             else
-            {
-                ledStatus.setCicle(LED_SEQUENCE_ERROR_2);
-            }
-        }
-        else
-        {
-            if (power == 0)
-            {
                 ledStatus.setCicle(LED_SEQUENCE_ERROR_1);
-            }
         }
+        else if (power > 0)
+            ledStatus.setCicle(LED_SEQUENCE_ERROR_2);
 
         // Send Light Status
         if (dot->getNetworkJoinStatus())
