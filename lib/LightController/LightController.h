@@ -23,7 +23,7 @@ public:
   float getDimming(const uint8_t hour);
   void setManualDimming(float dimLevel);
   void setOpMode(const OpMode opMode_);
-  LightController::OpMode getMode();
+  uint8_t getMode();
   void printMode();
   float getManualDimLevel();
 

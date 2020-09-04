@@ -15,9 +15,19 @@ void LightController::setOpMode(const OpMode opMode_)
   currentMode = opMode_;
 }
 
-LightController::OpMode LightController::getMode()
+uint8_t LightController::getMode()
 {
-  return currentMode;
+  // switch (currentMode)
+  // {
+  // default:
+  // case OpMode::Manual:
+  //   return 0x00;
+  // case OpMode::AutoPhotoCell:
+  //   return 0x01;
+  // case OpMode::AutoCurve:
+  //   return 0x02;
+  // }
+  return static_cast<uint8_t>(currentMode);
 }
 
 void LightController::printMode()
