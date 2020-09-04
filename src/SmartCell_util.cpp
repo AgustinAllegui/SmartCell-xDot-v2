@@ -20,7 +20,7 @@ bool syncTime(const uint8_t attempts, const float timeZone)
     if (recievedTimestamp > 1198800018000) // 1198800018 = GPS timestamp para 1/1/2018 00:00:00
     {
       // Diferencia (en 2020) entre UNIX epoch con GPS epoch 315964782
-      recievedTimestamp = (recievedTimestamp / 1000) + (315964782 + static_cast<uint64_t>(timeZone * 3600));
+      recievedTimestamp = (recievedTimestamp / 1000) + static_cast<uint64_t>(315964782 + (timeZone * 3600));
       set_time(recievedTimestamp);
       time_t currentTimestamp = time(NULL);
       logInfo("Clock Sync to %s", ctime(&currentTimestamp));
