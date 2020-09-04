@@ -60,6 +60,11 @@ bool bypassLoopDelay = false;
 Timer lastMesureTimer; // timer para medicion de energia
 LowPowerTimer lastClockSyncTimer;
 
+// banderas para uplink
+bool pendingSyncClock = false;
+bool pendingSendTimestamp = false;
+bool pendingSendConfig = false;
+
 // [END] Luminary global
 
 // [START] Luminary global
@@ -74,8 +79,19 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
 
     switch (RxBuffer[0])
     {
+    case 'A': // setear hora manualmente
+    {
+        uint32_t aux32 = 0;
+        aux32 = static_cast<uint32_t>(RxBuffer[1] << 24);
+        aux32 |= static_cast<uint32_t>(RxBuffer[2] << 16);
+        aux32 |= static_cast<uint32_t>(RxBuffer[3] << 8);
+        aux32 |= static_cast<uint32_t>(RxBuffer[4]);
+        setManualTime(aux32);
+        break;
+    }
 
     case 'C': // Cambio de curva de dimming
+    {
         logInfo("Switching to Curve %u", RxBuffer[1]);
         dimmingCurves.selectCurve(RxBuffer[1]);
         lightController.setOpMode(LightController::OpMode::AutoCurve);
@@ -86,8 +102,10 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
         saveBuffer[0] = dimmingCurves.getCurrentCurve();
         dot->nvmWrite(DIR_CURVE, saveBuffer, 1);
         break;
+    }
 
     case 'D': // Set manual dimming
+    {
         logInfo("Switching to Manual %u%", RxBuffer[1]);
         lightController.setManualDimming(static_cast<float>(RxBuffer[1]) / 100);
         lightController.setOpMode(LightController::OpMode::Manual);
@@ -98,8 +116,22 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
         saveBuffer[0] = static_cast<uint8_t>(lightController.getManualDimLevel() * 100);
         dot->nvmWrite(DIR_MANUAL_DIMMING, saveBuffer, 1);
         break;
+    }
+
+    case 'E': // Enviar configuracion de light Contoller
+    {
+        pendingSendConfig = true;
+        break;
+    }
+
+    case 'H': // enviar timestamp
+    {
+        pendingSendTimestamp = true;
+        break;
+    }
 
     case 'M': // Set mode
+    {
         switch (RxBuffer[1])
         {
         case 0x00:
@@ -125,18 +157,29 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
             break;
         }
         break;
+    }
 
-    case 'R':
+    case 'R': // Software reset
+    {
         NVIC_SystemReset();
         break;
+    }
 
-    case 'T':
-        uint16_t aux = static_cast<uint16_t>(RxBuffer[1]) << 8;
-        aux += RxBuffer[2];
-        logInfo("Changing loop delay to %u seconds", aux);
-        loopDelay = aux;
+    case 'S': // Sincronizar hora
+    {
+        pendingSyncClock = true;
+        break;
+    }
+
+    case 'T': // Cambiar loop delay
+    {
+        uint16_t aux16 = static_cast<uint16_t>(RxBuffer[1]) << 8;
+        aux16 += RxBuffer[2];
+        logInfo("Changing loop delay to %u seconds", aux16);
+        loopDelay = aux16;
         dot->nvmWrite(DIR_LOOP_DELAY, &RxBuffer[1], 2);
         break;
+    }
     }
 
     // bypass loop delay
@@ -291,13 +334,9 @@ int main()
     {
         // evitar configurar para curva antes de obtener la hora
         if (static_cast<LightController::OpMode>(saveBuffer[0]) == LightController::OpMode::AutoCurve)
-        {
             lightController.setOpMode(LightController::OpMode::AutoPhotoCell);
-        }
         else
-        {
             lightController.setOpMode(static_cast<LightController::OpMode>(saveBuffer[0]));
-        }
     }
     else
         logError("Failed to read saved operation mode");
@@ -343,8 +382,10 @@ int main()
 
 #if ENABLE_JOIN == 1
         // Sincronizar hora si no esta sincronizado o cada 12 horas.
-        if (!timeIsSynced() || lastClockSyncTimer.read() > 43200)
+        // if ( pendingSyncClock || !timeIsSynced() || lastClockSyncTimer.read() > 43200)
+        if (pendingSyncClock || !timeIsSynced() || lastClockSyncTimer.read() > 43200)
         {
+            pendingSyncClock = false;
             logInfo("Attemting to sync clock");
             if (syncTime(5, TIME_ZONE))
             {
@@ -353,6 +394,13 @@ int main()
         }
 #endif
 
+        // enviar timestamp si estaba pendiente
+        if (pendingSendTimestamp)
+        {
+            pendingSendTimestamp = false;
+            send_currentTime();
+        }
+
         // si esta en hora, recuperar modo curvas si esta guardado
         if (timeIsSynced())
         {
@@ -360,6 +408,13 @@ int main()
             {
                 lightController.setOpMode(static_cast<LightController::OpMode>(saveBuffer[0]));
             }
+        }
+
+        // enviar configuracion si estaba pendiente
+        if (pendingSendConfig)
+        {
+            pendingSendConfig = false;
+            send_smartCellConfig(lightController.getMode(), static_cast<uint8_t>(lightController.getManualDimLevel() * 100), loopDelay);
         }
 
         // Energy calculation
