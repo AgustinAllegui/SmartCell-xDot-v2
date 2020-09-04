@@ -58,6 +58,7 @@ uint16_t loopDelay = 30; // amount of seconds between loops
 bool bypassLoopDelay = false;
 
 Timer lastMesureTimer; // timer para medicion de energia
+LowPowerTimer lastClockSyncTimer;
 
 // [END] Luminary global
 
@@ -315,6 +316,9 @@ int main()
     // iniciar timer de medicion de energia
     lastMesureTimer.start();
 
+    // iniciar timer de sincronizacion de reloj
+    lastClockSyncTimer.start();
+
     // [END] init Luminary
 
     while (true)
@@ -330,14 +334,17 @@ int main()
 
 #endif
         // Show time
-        void printTime();
+        printTime();
 
 #if ENABLE_JOIN == 1
-        // Sincronizar hora.
-        if (!timeIsSynced()) //! agregar sincronizacion periodica
+        // Sincronizar hora si no esta sincronizado o cada 12 horas.
+        if (!timeIsSynced() || lastClockSyncTimer.read() > 43200)
         {
             logInfo("Attemting to sync clock");
-            syncTime(5, TIME_ZONE);
+            if (syncTime(5, TIME_ZONE))
+            {
+                lastClockSyncTimer.reset();
+            }
         }
 #endif
 
