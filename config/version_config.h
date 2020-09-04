@@ -8,7 +8,7 @@
 // Version
 
 #define PROMATIX_VERSION_MAJOR 2
-#define PROMATIX_VERSION_MINOR 2
+#define PROMATIX_VERSION_MINOR 3
 #define PROMATIX_VERSION_PATCH 0
 
 //-------------------------------------------------------------
