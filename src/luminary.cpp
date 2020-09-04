@@ -74,6 +74,7 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
 
     switch (RxBuffer[0])
     {
+
     case 'C': // Cambio de curva de dimming
         logInfo("Switching to Curve %u", RxBuffer[1]);
         dimmingCurves.selectCurve(RxBuffer[1]);
@@ -123,6 +124,10 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
             logError("Mode not found");
             break;
         }
+        break;
+
+    case 'R':
+        NVIC_SystemReset();
         break;
 
     case 'T':
