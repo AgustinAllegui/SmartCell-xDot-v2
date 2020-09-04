@@ -17,6 +17,7 @@ bool syncTime(const uint8_t attempts, const float timeZone)
     // realizar intenito.
     uint64_t recievedTimestamp = dot->getGPSTime();
     // verificar
+    logDebug("Timestam received: %lu", recievedTimestamp);
     if (recievedTimestamp > 1198800018000) // 1198800018 = GPS timestamp para 1/1/2018 00:00:00
     {
       // Diferencia (en 2020) entre UNIX epoch con GPS epoch 315964782
@@ -107,6 +108,8 @@ bool send_currentTime()
   {
     // obtener timestamp
     time_t currentTimestamp = time(NULL);
+
+    logDebug("Timestamp to be send: %lu", currentTimestamp);
 
     // buffer a enviar
     std::vector<uint8_t> tx_data;
