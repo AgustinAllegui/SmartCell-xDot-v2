@@ -155,7 +155,7 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
             dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
             break;
         case 0x03:
-            logInfo("Switch to mode dimming Curve");
+            logInfo("Switch to mode Demo");
             lightController.setOpMode(LightController::OpMode::Demo);
             //! no se si conviene guardar el modo demo en memoria no volatil.
             saveBuffer[0] = static_cast<uint8_t>(LightController::OpMode::Demo);
