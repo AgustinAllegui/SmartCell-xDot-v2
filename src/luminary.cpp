@@ -11,6 +11,7 @@
 #include "PhotoCell.h"
 #include "LightController.h"
 #include "LightOutput.h"
+#include "DimmingDemo.h"
 
 #include "SmartCell_util.h"
 
@@ -50,7 +51,8 @@ LedHandler ledLora(PA_5, false);   // led Indicador de alimentacion
 CurrentSensor currentSensor(PB_12);
 PhotoCell photoCell(PB_13, 0.65, 0.7);
 DimmingCurves dimmingCurves;
-LightController lightController(&photoCell, &dimmingCurves, LightController::OpMode::Manual);
+DimmingDemo dimmingDemo;
+LightController lightController(&photoCell, &dimmingCurves, &dimmingDemo, LightController::OpMode::Manual);
 LightOutput lightOutput(PB_2, PB_0);
 
 // otras variables
@@ -152,6 +154,14 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
             saveBuffer[0] = static_cast<uint8_t>(LightController::OpMode::AutoCurve);
             dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
             break;
+        case 0x03:
+            logInfo("Switch to mode dimming Curve");
+            lightController.setOpMode(LightController::OpMode::Demo);
+            //! no se si conviene guardar el modo demo en memoria no volatil.
+            saveBuffer[0] = static_cast<uint8_t>(LightController::OpMode::Demo);
+            dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
+            break;
+
         default:
             logError("Mode not found");
             break;
@@ -479,11 +489,21 @@ int main()
         logInfo("waiting for %us", loopDelay);
         for (uint16_t i = 0; i < loopDelay; i++)
         {
+            // Saltarse el retardo si se activa el bypass
             if (bypassLoopDelay)
             {
                 logInfo("Bypassing loop delay");
                 bypassLoopDelay = false;
                 break;
+            }
+
+            // Reducir el retardo si esta en modo demostracion
+            if (lightController.getMode() == static_cast<uint8_t>(LightController::OpMode::Demo))
+            {
+                if (i >= dimmingDemo.demoPeriod)
+                {
+                    break;
+                }
             }
             wait_us(1000000);
         }
