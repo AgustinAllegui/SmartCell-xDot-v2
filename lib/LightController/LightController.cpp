@@ -2,9 +2,10 @@
 
 #include "LightController.h"
 
-LightController::LightController(PhotoCell *photoCell_, DimmingCurves *dimmingCurves_, const LightController::OpMode opMode_)
+LightController::LightController(PhotoCell *photoCell_, DimmingCurves *dimmingCurves_, DimmingDemo *dimmingDemo_, const LightController::OpMode opMode_)
     : photoCell(photoCell_),
       dimmingCurves(dimmingCurves_),
+      dimmingDemo(dimmingDemo_),
       currentMode(opMode_),
       manualDimLevel(1.0f)
 {
@@ -17,16 +18,6 @@ void LightController::setOpMode(const OpMode opMode_)
 
 uint8_t LightController::getMode()
 {
-  // switch (currentMode)
-  // {
-  // default:
-  // case OpMode::Manual:
-  //   return 0x00;
-  // case OpMode::AutoPhotoCell:
-  //   return 0x01;
-  // case OpMode::AutoCurve:
-  //   return 0x02;
-  // }
   return static_cast<uint8_t>(currentMode);
 }
 
@@ -45,6 +36,8 @@ void LightController::printMode()
     logInfo("Mode ============ PhotoCell");
     logInfo("lux ============= %.0f%", photoCell->getLastRead() * 100);
     break;
+  case OpMode::Demo:
+    logInfo("Mode ============ Demo");
   }
 }
 
@@ -78,6 +71,10 @@ float LightController::getDimming(const uint8_t hour)
 
   case OpMode::AutoCurve:
     return dimmingCurves->getDimming(hour);
+    break;
+
+  case OpMode::Demo:
+    return dimmingDemo->getDimming();
     break;
   }
 }
