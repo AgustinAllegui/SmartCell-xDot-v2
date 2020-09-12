@@ -51,6 +51,8 @@ LedHandler ledLora(PA_5, false);   // led Indicador de alimentacion
 CurrentSensor currentSensor(PB_12);
 PhotoCell photoCell(PB_13, 0.65, 0.7);
 DimmingCurves dimmingCurves;
+uint8_t customCurve[12];
+
 DimmingDemo dimmingDemo;
 LightController lightController(&photoCell, &dimmingCurves, &dimmingDemo, LightController::OpMode::Manual);
 LightOutput lightOutput(PB_2, PB_0);
@@ -83,6 +85,8 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
     {
     case 'A': // setear hora manualmente
     {
+        if (RxBufferSize < 5)
+            break;
         uint32_t aux32 = 0;
         aux32 = static_cast<uint32_t>(RxBuffer[1] << 24);
         aux32 |= static_cast<uint32_t>(RxBuffer[2] << 16);
@@ -94,6 +98,8 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
 
     case 'C': // Cambio de curva de dimming
     {
+        if (RxBufferSize < 2)
+            break;
         logInfo("Switching to Curve %u", RxBuffer[1]);
         dimmingCurves.selectCurve(RxBuffer[1]);
         lightController.setOpMode(LightController::OpMode::AutoCurve);
@@ -108,6 +114,8 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
 
     case 'D': // Set manual dimming
     {
+        if (RxBufferSize < 2)
+            break;
         logInfo("Switching to Manual %u%", RxBuffer[1]);
         lightController.setManualDimming(static_cast<float>(RxBuffer[1]) / 100);
         lightController.setOpMode(LightController::OpMode::Manual);
@@ -126,14 +134,35 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
         break;
     }
 
-    case 'H': // enviar timestamp
+    case 'H': // Enviar timestamp
     {
         pendingSendTimestamp = true;
         break;
     }
 
+    case 'J': // Configurar parte baja de customCurve
+    {
+        if (RxBufferSize < 7)
+            break;
+        logInfo("Setting low part of custom curve");
+        dot->nvmWrite(DIR_CUSTOM_CURVE, &RxBuffer[1], 6); // Guardar parte baja
+        dot->nvmRead(DIR_CUSTOM_CURVE, customCurve, 12);
+        break;
+    }
+    case 'K': // Configurar parte alta de customCurve
+    {
+        if (RxBufferSize < 7)
+            break;
+        logInfo("Setting high part of custom curve");
+        dot->nvmWrite(DIR_CUSTOM_CURVE + 6, &RxBuffer[1], 6); // Guardar parte alta
+        dot->nvmRead(DIR_CUSTOM_CURVE, customCurve, 12);
+        break;
+    }
+
     case 'M': // Set mode
     {
+        if (RxBufferSize < 2)
+            break;
         switch (RxBuffer[1])
         {
         case 0x00:
@@ -183,6 +212,8 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
 
     case 'T': // Cambiar loop delay
     {
+        if (RxBufferSize < 3)
+            break;
         uint16_t aux16 = static_cast<uint16_t>(RxBuffer[1]) << 8;
         aux16 += RxBuffer[2];
         logInfo("Changing loop delay to %u seconds", aux16);
@@ -321,6 +352,12 @@ int main()
 
             saveBuffer[0] = 100; // Dimming manual 100%
             dot->nvmWrite(DIR_MANUAL_DIMMING, saveBuffer, 2);
+
+            // En un bloque individual para liberar la memoria del buffer en cuanto se termine.
+            {
+                uint8_t saveBuffer12[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+                dot->nvmWrite(DIR_CUSTOM_CURVE, saveBuffer12, 12);
+            }
         }
     }
 
@@ -356,6 +393,10 @@ int main()
         dimmingCurves.selectCurve(saveBuffer[0]);
     else
         logError("Failed to read saved curve index");
+
+    // leer custom curve
+    if (!dot->nvmRead(DIR_CUSTOM_CURVE, customCurve, 12))
+        logError("Failed to read saved custom curve");
 
     // Initial delay
     srand(photoCell.read(1));               // Iniciamos la semilla de numeros aleatorios leyendo la luz
