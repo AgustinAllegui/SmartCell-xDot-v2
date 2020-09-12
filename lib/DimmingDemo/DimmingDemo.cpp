@@ -33,9 +33,9 @@ float DimmingDemo::getDimming()
     else
     {
         lastValue -= DIMMING_DEMO_INCREMENT;
-        if (lastValue <= 0)
+        if (lastValue <= 0.2)
         {
-            lastValue = 0;
+            lastValue = 0.2;
             goingUp = true;
         }
     }

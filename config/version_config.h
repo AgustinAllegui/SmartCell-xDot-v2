@@ -8,7 +8,7 @@
 // Version
 
 #define PROMATIX_VERSION_MAJOR 2
-#define PROMATIX_VERSION_MINOR 3
+#define PROMATIX_VERSION_MINOR 4
 #define PROMATIX_VERSION_PATCH 0
 
 //-------------------------------------------------------------
@@ -39,17 +39,17 @@
 
 #define LED_SEQUENCE_OK \
     {                   \
-        0.2, 1.7        \
+        0.2, 2.7        \
     }
 #define LED_SEQUENCE_ERROR_1 \
     {                        \
-        0.2, 0.2, 0.2, 1.4   \
+        0.2, 0.5, 0.2, 3.0   \
     }
 #define LED_SEQUENCE_ERROR_2         \
     {                                \
-        0.2, 0.2, 0.2, 0.2, 0.2, 1.0 \
+        0.2, 0.5, 0.2, 0.5, 0.2, 3.0 \
     }
 #define LED_SEQUENCE_ERROR_3                   \
     {                                          \
-        0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.6 \
+        0.2, 0.5, 0.2, 0.5, 0.2, 0.5, 0.2, 3.0 \
     }
