@@ -13,16 +13,13 @@ const uint8_t DimmingCurves::curves[][12] = {
 DimmingCurves::DimmingCurves(const uint8_t index)
     : currentCurve(index)
 {
-  maxIndex = sizeof(curves) / sizeof(curves[0]);
-  if (index > maxIndex)
-  {
-    currentCurve = 0;
-  }
+  staticCurves = sizeof(curves) / sizeof(curves[0]);
+  selectCurve(index);
 }
 
 uint8_t DimmingCurves::selectCurve(const uint8_t index)
 {
-  if (index > maxIndex)
+  if (index > staticCurves)
   {
     currentCurve = 0;
   }
@@ -41,7 +38,15 @@ float DimmingCurves::getDimming(const uint8_t hour)
     return 0;
   }
 
-  uint8_t twoValues = curves[currentCurve][hour / 2];
+  uint8_t twoValues;
+  if (currentCurve < staticCurves)
+  {
+    twoValues = curves[currentCurve][hour / 2];
+  }
+  else if (currentCurve == staticCurves)
+  {
+    twoValues = customCurve[hour / 2];
+  }
 
   uint8_t dimming;
   if (hour % 2 != 0)
