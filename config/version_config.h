@@ -8,20 +8,21 @@
 // Version
 
 #define PROMATIX_VERSION_MAJOR 2
-#define PROMATIX_VERSION_MINOR 4
+#define PROMATIX_VERSION_MINOR 5
 #define PROMATIX_VERSION_PATCH 0
 
 //-------------------------------------------------------------
 // Direcciones en memoria no volatil
 
-#define DIR_PROMATIX_VERSION_MAJOR 0x00
-#define DIR_PROMATIX_VERSION_MINOR 0x01
-#define DIR_PROMATIX_VERSION_PATCH 0x02
+#define DIR_PROMATIX_VERSION_MAJOR 0x00 // 1 Byte
+#define DIR_PROMATIX_VERSION_MINOR 0x01 // 1 Byte
+#define DIR_PROMATIX_VERSION_PATCH 0x02 // 1 Byte
 
-#define DIR_LOOP_DELAY 0x10
-#define DIR_OP_MODE 0x12
-#define DIR_CURVE 0x13
-#define DIR_MANUAL_DIMMING 0x14
+#define DIR_LOOP_DELAY 0x10     // 2 Bytes
+#define DIR_OP_MODE 0x12        // 1 Byte
+#define DIR_CURVE 0x13          // 1 Byte
+#define DIR_MANUAL_DIMMING 0x14 // 1 Byte
+#define DIR_CUSTOM_CURVE 0x15   // 12 Bytes
 
 //-------------------------------------------------------------
 // Actives generation of test data (para version PULSE_METER)
