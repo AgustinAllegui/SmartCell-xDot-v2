@@ -125,3 +125,6 @@ BUILD/*
 *.uvguix.*
 
 .vscode/*
+
+# Archivos temporales de office
+~*
