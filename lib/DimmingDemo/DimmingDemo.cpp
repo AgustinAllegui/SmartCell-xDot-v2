@@ -15,7 +15,7 @@ const uint16_t DimmingDemo::demoPeriod = DIMMING_DEMO_PERIOD;
 
 DimmingDemo::DimmingDemo()
     : goingUp(false),
-      lastValue(0)
+      lastValue(1)
 {
 }
 

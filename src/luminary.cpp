@@ -410,6 +410,7 @@ int main()
 
     // iniciar timer de medicion de energia
     lastMesureTimer.start();
+    float energy = 0;
 
     // iniciar timer de sincronizacion de reloj
     lastClockSyncTimer.start();
@@ -472,7 +473,7 @@ int main()
         float power = currentSensor.getCurrent() * 220;
         float timeSinceLastMesure = lastMesureTimer.read();
         lastMesureTimer.reset();
-        float energy = (power * timeSinceLastMesure) / 3600;
+        energy += (power * timeSinceLastMesure) / 3600;
 
         // Cambiar el nivel de dimming segun la hora
         float dimming = lightController.getDimming(getHour());
@@ -510,6 +511,8 @@ int main()
         {
             if (send_lightStatus(dimming, power, energy))
             {
+                // Quitar parte enviada de la energia.
+                energy -= trunc(energy);
                 ledLora.setCicle(LED_SEQUENCE_OK);
             }
             else
