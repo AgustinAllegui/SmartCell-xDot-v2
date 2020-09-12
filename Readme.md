@@ -47,7 +47,7 @@ Existen 3 curvas estaticas:
 |:-------:	|---------	|---------	|---------	|
 | *Indice* 	| 0       	| 1       	| 2       	|
 |          	|         	|         	|         	|
-| 8 - 19 	| 0       	| 0       	| 0       	|
+| 8 - 19    | 0       	| 0       	| 0       	|
 | 19 - 20 	| 80      	| 80      	| 80      	|
 | 20 - 21 	| 100     	| 100     	| 100     	|
 | 21 - 22 	| 100     	| 100     	| 100     	|
@@ -62,6 +62,7 @@ Existen 3 curvas estaticas:
 | 6 - 7   	| 60      	| 50      	| 80      	|
 | 7 - 8   	| 100     	| 100     	| 100     	|
 | 8 - 19   	| 0       	| 0       	| 0       	|
+
 Existe una curva que puede ser definida remotamente por el usuario. Esta curva tiene indice 3.
 
 
