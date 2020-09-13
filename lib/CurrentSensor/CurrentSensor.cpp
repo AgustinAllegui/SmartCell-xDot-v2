@@ -35,3 +35,13 @@ float CurrentSensor::getCurrent()
 
   return current; //current in Ampere
 }
+
+float CurrentSensor::getCurrent(const uint8_t points)
+{
+  float average = 0;
+  for (uint8_t i = 0; i < points; i++)
+  {
+    average += getCurrent();
+  }
+  return average / points;
+}

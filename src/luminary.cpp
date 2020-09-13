@@ -470,7 +470,7 @@ int main()
         }
 
         // Energy calculation
-        float power = currentSensor.getCurrent() * 220;
+        float power = currentSensor.getCurrent(5) * 220;
         float timeSinceLastMesure = lastMesureTimer.read();
         lastMesureTimer.reset();
         energy += (power * timeSinceLastMesure) / 3600;
@@ -481,7 +481,7 @@ int main()
 
         // medicion de potencia
         wait_us(500000); // retardo de 500ms para que se estabilice la corriente antes de medirla
-        power = currentSensor.getCurrent() * 220;
+        power = currentSensor.getCurrent(5) * 220;
 
         // print config
         logInfo("========================");
