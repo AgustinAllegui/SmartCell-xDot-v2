@@ -216,6 +216,8 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
             break;
         uint16_t aux16 = static_cast<uint16_t>(RxBuffer[1]) << 8;
         aux16 += RxBuffer[2];
+        if (aux16 < 30)
+            aux16 = 30;
         logInfo("Changing loop delay to %u seconds", aux16);
         loopDelay = aux16;
         dot->nvmWrite(DIR_LOOP_DELAY, &RxBuffer[1], 2);
@@ -399,11 +401,17 @@ int main()
         logError("Failed to read saved custom curve");
 
     // Initial delay
-    srand(photoCell.read(1));               // Iniciamos la semilla de numeros aleatorios leyendo la luz
-    wait_us((rand() % (100 + 1)) * 100000); // esperamos un tiempo aleatorio (entre 0 y 10s) antes de mandar el join
+    {
+        int randomSeed = static_cast<int>(photoCell.read(1) * 1000) % 16;
+        randomSeed = (randomSeed << 4) + static_cast<int>(photoCell.read(1) * 1000) % 15;
+        randomSeed = (randomSeed << 4) + static_cast<int>(photoCell.read(1) * 1000) % 15;
+        randomSeed = (randomSeed << 4) + static_cast<int>(photoCell.read(1) * 1000) % 15;
+        srand(randomSeed);                      // Iniciamos la semilla de numeros aleatorios leyendo la luz
+        wait_us((rand() % (100 + 1)) * 100000); // esperamos un tiempo aleatorio (entre 0 y 10s) antes de mandar el join
+    }
 
 #if ENABLE_JOIN == 1
-        // Intentamos Join y si es exitoso
+    // Intentamos Join y si es exitoso
     join_network(24);
 
 #endif
@@ -530,8 +538,9 @@ int main()
         // the Dot can't sleep in class C mode
         // it must be waiting for data from the gateway
 
-        logInfo("waiting for %us", loopDelay);
-        for (uint16_t i = 0; i < loopDelay; i++)
+        uint16_t thisDelay = loopDelay + (rand() % (20 + 1)) - 10;
+        logInfo("waiting for %us", thisDelay);
+        for (uint16_t i = 0; i < thisDelay; i++)
         {
             // Saltarse el retardo si se activa el bypass
             if (bypassLoopDelay)
