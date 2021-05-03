@@ -8,7 +8,7 @@
 // Version
 
 #define PROMATIX_VERSION_MAJOR 2
-#define PROMATIX_VERSION_MINOR 5
+#define PROMATIX_VERSION_MINOR 6
 #define PROMATIX_VERSION_PATCH 0
 
 //-------------------------------------------------------------
@@ -23,6 +23,8 @@
 #define DIR_CURVE 0x13          // 1 Byte
 #define DIR_MANUAL_DIMMING 0x14 // 1 Byte
 #define DIR_CUSTOM_CURVE 0x15   // 12 Bytes
+#define DIR_ON_OFF_TIME 0x21    // 4 bytes
+
 
 //-------------------------------------------------------------
 // Actives generation of test data (para version PULSE_METER)

@@ -15,6 +15,7 @@
 #include "mbed.h"
 #include "MTSLog.h"
 #include "PhotoCell.h"
+#include "OnOffByTime.h"
 #include "DimmingCurves.h"
 #include "DimmingDemo.h"
 
@@ -26,7 +27,8 @@ public:
     Manual = 0x00,
     AutoPhotoCell = 0x01,
     AutoCurve = 0x02,
-    Demo = 0x03
+    Demo = 0x03,
+    AutoTime = 0x04
   };
 
   /**
@@ -34,18 +36,24 @@ public:
    * 
    * @param photoCell_ Puntero a manejado de fotocelda
    * @param dimmingCurves_ Puntero a manejador de curvas
+   * @param onOffByTime_ Puntero para manejo de on off por tiempo
    * @param dimmingDemo_ Puntero a manejado de demo
    * @param opMode_ Modo de operacion inicial
    */
-  LightController(PhotoCell *photoCell_, DimmingCurves *dimmingCurves_, DimmingDemo *dimmingDemo_, const LightController::OpMode opMode_);
+  LightController(  PhotoCell *photoCell_,
+                    DimmingCurves *dimmingCurves_,
+                    OnOffByTime *onOffByTime_,
+                    DimmingDemo *dimmingDemo_,
+                    const LightController::OpMode opMode_);
 
   /**
    * @brief Obtiene el valor de dimming segun la hora y modo actual.
    * 
-   * @param hour Hora actual (0 - 23) Usada para el modo curvas.
+   * @param hour Hora actual (0 - 23).
+   * @param minute Minuto actual (0 - 59).
    * @return Valor de dimming actual (0 - 1).
    */
-  float getDimming(const uint8_t hour);
+  float getDimming(const uint8_t hour, const uint8_t minute);
 
   /**
    * @brief Configura el valor de dimming manual.
@@ -79,6 +87,7 @@ public:
 private:
   PhotoCell *photoCell;
   DimmingCurves *dimmingCurves;
+  OnOffByTime *onOffByTime;
   DimmingDemo *dimmingDemo;
   OpMode currentMode;
 

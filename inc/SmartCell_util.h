@@ -54,6 +54,13 @@ bool syncTime(const uint8_t attempts = 1, const float timezone = TIME_ZONE);
 uint8_t getHour();
 
 /**
+ * @brief Devuelve unicamente el minuto actual (0 - 59).
+ * 
+ * @return uint8_t 
+ */
+uint8_t getMinute();
+
+/**
  * @brief Setea el RTC a una hora especifica
  * 
  * @param timestamp Segundos desde el UNIX epoch

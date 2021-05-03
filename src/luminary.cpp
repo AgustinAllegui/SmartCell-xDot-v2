@@ -9,6 +9,7 @@
 #include "CurrentSensor.h"
 #include "DimmingCurves.h"
 #include "PhotoCell.h"
+#include "OnOffByTime.h"
 #include "LightController.h"
 #include "LightOutput.h"
 #include "DimmingDemo.h"
@@ -50,11 +51,12 @@ LedHandler ledLora(PA_5, false);   // led Indicador de alimentacion
 // Declaracion componentes
 CurrentSensor currentSensor(PB_12);
 PhotoCell photoCell(PB_13, 0.65, 0.7);
+OnOffByTime onOffByTime(18, 0, 6, 0);
 DimmingCurves dimmingCurves;
 uint8_t customCurve[12];
 
 DimmingDemo dimmingDemo;
-LightController lightController(&photoCell, &dimmingCurves, &dimmingDemo, LightController::OpMode::Manual);
+LightController lightController(&photoCell, &dimmingCurves, &onOffByTime, &dimmingDemo, LightController::OpMode::Manual);
 LightOutput lightOutput(PB_2, PB_0);
 
 // otras variables
@@ -77,7 +79,7 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
 {
     logTrace("payloadParser");
 
-    uint8_t saveBuffer[1] = {0};
+    uint8_t saveBuffer[4] = {0, 0, 0, 0};
 
     // [START] Parseo de payload
 
@@ -198,6 +200,24 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
         break;
     }
 
+    case 'O': // Set On Off time
+    {
+        if(RxBufferSize < 5)
+            break;
+        logInfo("Setting On-Off time: %02u:%02u - %02u:%02u", RxBuffer[1], RxBuffer[2], RxBuffer[3], RxBuffer[4]);
+        onOffByTime.setOnOffTime(RxBuffer[1], RxBuffer[2], RxBuffer[3], RxBuffer[4]);
+        lightController.setOpMode(LightController::OpMode::AutoTime);
+        
+        //save config
+        saveBuffer[0] = static_cast<uint8_t>(LightController::OpMode::AutoTime);
+        dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
+        saveBuffer[0] = onOffByTime.getOnHour();
+        saveBuffer[1] = onOffByTime.getOnMinute();
+        saveBuffer[2] = onOffByTime.getOffHour();
+        saveBuffer[3] = onOffByTime.getOffMinute();
+        dot->nvmWrite(DIR_ON_OFF_TIME, saveBuffer, 4);
+
+    }
     case 'R': // Software reset
     {
         NVIC_SystemReset();
@@ -328,7 +348,7 @@ int main()
     ledLora.setCicle(LED_SEQUENCE_ERROR_1);
 
     // read config
-    uint8_t saveBuffer[3] = {0, 0, 0};
+    uint8_t saveBuffer[4] = {0, 0, 0, 0};
 
     // leer version de firmware para la que se crearon los datos
     // y comparar con la version actual
@@ -355,11 +375,17 @@ int main()
             dot->nvmWrite(DIR_CURVE, saveBuffer, 1);
 
             saveBuffer[0] = 100; // Dimming manual 100%
-            dot->nvmWrite(DIR_MANUAL_DIMMING, saveBuffer, 2);
+            dot->nvmWrite(DIR_MANUAL_DIMMING, saveBuffer, 1);
+
+            saveBuffer[0] = 18;  // Hora ON 18:00
+            saveBuffer[1] = 0;
+            saveBuffer[2] = 6;  // Hora OFF 06:00
+            saveBuffer[3] = 0;
+            dot->nvmWrite(DIR_ON_OFF_TIME, saveBuffer, 4);
 
             // En un bloque individual para liberar la memoria del buffer en cuanto se termine.
             {
-                uint8_t saveBuffer12[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+                uint8_t saveBuffer12[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};    // curva custom
                 dot->nvmWrite(DIR_CUSTOM_CURVE, saveBuffer12, 12);
             }
         }
@@ -384,7 +410,8 @@ int main()
     if (dot->nvmRead(DIR_OP_MODE, saveBuffer, 1))
     {
         // evitar configurar para curva antes de obtener la hora
-        if (static_cast<LightController::OpMode>(saveBuffer[0]) == LightController::OpMode::AutoCurve)
+        if ((static_cast<LightController::OpMode>(saveBuffer[0]) == LightController::OpMode::AutoCurve) ||
+            (static_cast<LightController::OpMode>(saveBuffer[0]) == LightController::OpMode::AutoTime))
             lightController.setOpMode(LightController::OpMode::AutoPhotoCell);
         else
             lightController.setOpMode(static_cast<LightController::OpMode>(saveBuffer[0]));
@@ -401,6 +428,12 @@ int main()
     // leer custom curve
     if (!dot->nvmRead(DIR_CUSTOM_CURVE, customCurve, 12))
         logError("Failed to read saved custom curve");
+
+    // leer on off time
+    if (dot->nvmRead(DIR_ON_OFF_TIME, saveBuffer, 4))
+        onOffByTime.setOnOffTime(saveBuffer[0], saveBuffer[1], saveBuffer[2], saveBuffer[3]);
+    else
+        logError("Failed to read On Off time");
 
     // Initial delay
     {
@@ -486,7 +519,7 @@ int main()
         energy += (power * timeSinceLastMesure) / 3600;
 
         // Cambiar el nivel de dimming segun la hora
-        float dimming = lightController.getDimming(getHour());
+        float dimming = lightController.getDimming(getHour(), getMinute());
         lightOutput.setOutput(dimming);
 
         // medicion de potencia

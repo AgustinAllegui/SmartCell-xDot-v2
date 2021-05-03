@@ -8,7 +8,7 @@ LightOutput::LightOutput(PinName relayPin, PinName dimmingOutputPin)
     : relay(relayPin), dimmingOutput(dimmingOutputPin)
 {
   dimmingOutput.period_us(1000);
-  setOutput(1.0f);
+  setOutput(0.0f);
 }
 
 void LightOutput::setOutput(const float dimmingValue_)

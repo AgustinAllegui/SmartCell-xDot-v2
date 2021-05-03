@@ -39,6 +39,13 @@ uint8_t getHour()
   return ((static_cast<uint32_t>(time(NULL)) / 3600) % 24);
 }
 
+uint8_t getMinute()
+{
+  // obtener la cantidad de minutos
+  return ((static_cast<uint32_t>(time(NULL)) / 60) % 60);
+
+}
+
 void setManualTime(const uint32_t timestamp)
 {
   set_time(timestamp);
