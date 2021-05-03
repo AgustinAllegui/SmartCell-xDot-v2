@@ -38,6 +38,15 @@
  *	2: ChirpStack
  */
 
-#define LORA_SUB_BAND 2
+#define LORA_SUB_BAND 1
+
+//-------------------------------------------------------------
+// join atempts
+
+//#define INITIAL_JOIN_ATEMPTS 24
+//#define LOOP_JOIN_ATEMPTS	8
+
+#define INITIAL_JOIN_ATEMPTS 4
+#define LOOP_JOIN_ATEMPTS	3
 
 #endif
