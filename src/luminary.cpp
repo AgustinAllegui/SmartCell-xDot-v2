@@ -61,12 +61,15 @@ LightOutput lightOutput(PB_2, PB_0);
 
 // otras variables
 uint16_t loopDelay = 30; // amount of seconds between loops
+uint8_t loopsToSend = 20; // cantidad de bucles entre transmisiones
+uint8_t loopsCount = 0; // contador para saber si toca transmitir
 bool bypassLoopDelay = false;
 
 Timer lastMesureTimer; // timer para medicion de energia
 LowPowerTimer lastClockSyncTimer;
 
 // banderas para uplink
+
 bool pendingSyncClock = false;
 bool pendingSendTimestamp = false;
 bool pendingSendConfig = false;
@@ -232,7 +235,7 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
 
     case 'T': // Cambiar loop delay
     {
-        if (RxBufferSize < 3)
+        if (RxBufferSize < 4)
             break;
         uint16_t aux16 = static_cast<uint16_t>(RxBuffer[1]) << 8;
         aux16 += RxBuffer[2];
@@ -240,7 +243,9 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
             aux16 = 30;
         logInfo("Changing loop delay to %u seconds", aux16);
         loopDelay = aux16;
-        dot->nvmWrite(DIR_LOOP_DELAY, &RxBuffer[1], 2);
+        loopsToSend = RxBuffer[3];
+        //save config
+        dot->nvmWrite(DIR_LOOP_DELAY, &RxBuffer[1], 3);
         break;
     }
     }
@@ -259,7 +264,7 @@ int main()
     pc.baud(9600);
 
 //    mts::MTSLog::setLogLevel(mts::MTSLog::TRACE_LEVEL);
-	mts::MTSLog::setLogLevel(mts::MTSLog::INFO_LEVEL);
+	mts::MTSLog::setLogLevel(mts::MTSLog::DEBUG_LEVEL);
 
 #if CHANNEL_PLAN == CP_US915
     plan = new lora::ChannelPlan_US915();
@@ -290,8 +295,8 @@ int main()
     dot->resetNetworkSession();
 
     // make sure library logging is turned on
-//    dot->setLogLevel(mts::MTSLog::DEBUG_LEVEL);
-		dot->setLogLevel(mts::MTSLog::INFO_LEVEL);
+    dot->setLogLevel(mts::MTSLog::DEBUG_LEVEL);
+		//dot->setLogLevel(mts::MTSLog::INFO_LEVEL);
 
     // attach the custom events handler
     dot->setEvents(&events);
@@ -364,9 +369,10 @@ int main()
             saveBuffer[2] = PROMATIX_VERSION_PATCH;
             dot->nvmWrite(DIR_PROMATIX_VERSION_MAJOR, saveBuffer, 3);
 
-            saveBuffer[0] = 0x02; // loop delay cada 10 minutos
-            saveBuffer[1] = 0x58;
-            dot->nvmWrite(DIR_LOOP_DELAY, saveBuffer, 2);
+            saveBuffer[0] = 0x00; // loop delay cada 10 minutos
+            saveBuffer[1] = 0x1E;
+            saveBuffer[2] = 0x20; // 20 loops entre envios
+            dot->nvmWrite(DIR_LOOP_DELAY, saveBuffer, 3);
 
             saveBuffer[0] = 0x01; // Modo de operacion Fotocelda
             dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
@@ -392,10 +398,11 @@ int main()
     }
 
     // leer loop delay
-    if (dot->nvmRead(DIR_LOOP_DELAY, saveBuffer, 2))
+    if (dot->nvmRead(DIR_LOOP_DELAY, saveBuffer, 3))
     {
         loopDelay = static_cast<uint16_t>(saveBuffer[0]) << 8;
         loopDelay += saveBuffer[1];
+        loopsToSend = saveBuffer[2];
     }
     else
         logError("Failed to read saved loop delay");
@@ -458,60 +465,65 @@ int main()
     // iniciar timer de sincronizacion de reloj
     lastClockSyncTimer.start();
 
+    // Iniciar con un bucle de transmision
+    loopsCount = loopsToSend;
+
     // [END] init Luminary
 
     while (true)
     {
         // [START] Luminary Loop
+        if(loopsCount >= loopsToSend){
 
-#if ENABLE_JOIN == 1
-        // Intentamos Join.
-        if (!dot->getNetworkJoinStatus())
-        {
-            join_network(LOOP_JOIN_ATEMPTS);
-        }
-
-#endif
-        // Show time
-        printTime();
-
-#if ENABLE_JOIN == 1
-        // Sincronizar hora si no esta sincronizado o cada 12 horas.
-        // if ( pendingSyncClock || !timeIsSynced() || lastClockSyncTimer.read() > 43200)
-        if (pendingSyncClock || !timeIsSynced() || lastClockSyncTimer.read() > 43200)
-        {
-            pendingSyncClock = false;
-            logInfo("Attemting to sync clock");
-            if (syncTime(5, TIME_ZONE))
+    #if ENABLE_JOIN == 1
+            // Intentamos Join.
+            if (!dot->getNetworkJoinStatus())
             {
-                lastClockSyncTimer.reset();
+                join_network(LOOP_JOIN_ATEMPTS);
             }
-        }
-#endif
 
-        // enviar timestamp si estaba pendiente
-        if (pendingSendTimestamp)
-        {
-            pendingSendTimestamp = false;
-            send_currentTime();
-        }
+    #endif
+            // Show time
+            printTime();
 
-        // si esta en hora, recuperar modo curvas si esta guardado
-        if (timeIsSynced())
-        {
-            if (dot->nvmRead(DIR_OP_MODE, saveBuffer, 1))
+    #if ENABLE_JOIN == 1
+            // Sincronizar hora si no esta sincronizado o cada 12 horas.
+            // if ( pendingSyncClock || !timeIsSynced() || lastClockSyncTimer.read() > 43200)
+            if (pendingSyncClock || !timeIsSynced() || lastClockSyncTimer.read() > 43200)
             {
-                lightController.setOpMode(static_cast<LightController::OpMode>(saveBuffer[0]));
+                pendingSyncClock = false;
+                logInfo("Attemting to sync clock");
+                if (syncTime(5, TIME_ZONE))
+                {
+                    lastClockSyncTimer.reset();
+                }
             }
-        }
+    #endif
 
-        // enviar configuracion si estaba pendiente
-        if (pendingSendConfig)
-        {
-            pendingSendConfig = false;
-            send_smartCellConfig(lightController.getMode(), static_cast<uint8_t>(lightController.getManualDimLevel() * 100), loopDelay);
-        }
+            // enviar timestamp si estaba pendiente
+            if (pendingSendTimestamp)
+            {
+                pendingSendTimestamp = false;
+                send_currentTime();
+            }
 
+            // si esta en hora, recuperar modo curvas si esta guardado
+            if (timeIsSynced())
+            {
+                if (dot->nvmRead(DIR_OP_MODE, saveBuffer, 1))
+                {
+                    lightController.setOpMode(static_cast<LightController::OpMode>(saveBuffer[0]));
+                }
+            }
+
+            // enviar configuracion si estaba pendiente
+            if (pendingSendConfig)
+            {
+                pendingSendConfig = false;
+                send_smartCellConfig(lightController.getMode(), static_cast<uint8_t>(lightController.getManualDimLevel() * 100), loopDelay);
+            }
+
+        }
         // Energy calculation
         float power = currentSensor.getCurrent(5) * 220;
         float timeSinceLastMesure = lastMesureTimer.read();
@@ -537,6 +549,7 @@ int main()
         logInfo("Energy ========== %.2fkW", energy);
         logInfo("Last mesure ===== %.0f seconds ago", timeSinceLastMesure);
         logInfo("Period ========== %us", loopDelay);
+        logInfo("Uplink in ======= %u loops", loopsToSend - loopsCount);
 
         // check if error
         if (dimming > 0)
@@ -550,22 +563,30 @@ int main()
             ledStatus.setCicle(LED_SEQUENCE_ERROR_2);
 
         // Send Light Status
-        if (dot->getNetworkJoinStatus())
-        {
-            if (send_lightStatus(dimming, power, energy))
+        if(loopsCount >= loopsToSend){
+            if (dot->getNetworkJoinStatus())
             {
-                // Quitar parte enviada de la energia.
-                energy -= trunc(energy);
-                ledLora.setCicle(LED_SEQUENCE_OK);
+                if (send_lightStatus(dimming, power, energy))
+                {
+                    // Quitar parte enviada de la energia.
+                    energy -= trunc(energy);
+                    ledLora.setCicle(LED_SEQUENCE_OK);
+                }
+                else
+                {
+                    ledLora.setCicle(LED_SEQUENCE_ERROR_2);
+                }
             }
             else
             {
-                ledLora.setCicle(LED_SEQUENCE_ERROR_2);
+                ledLora.setCicle(LED_SEQUENCE_ERROR_1);
             }
         }
-        else
-        {
-            ledLora.setCicle(LED_SEQUENCE_ERROR_1);
+
+        // contar loops
+        loopsCount++;
+        if(loopsCount >= loopsToSend){
+            loopsCount = 0;
         }
 
         // [END] Luminary Loop
@@ -581,6 +602,7 @@ int main()
             if (bypassLoopDelay)
             {
                 logInfo("Bypassing loop delay");
+                loopsCount = loopsToSend;
                 bypassLoopDelay = false;
                 break;
             }
@@ -588,6 +610,7 @@ int main()
             // Reducir el retardo si esta en modo demostracion
             if (lightController.getMode() == static_cast<uint8_t>(LightController::OpMode::Demo))
             {
+                loopsCount = loopsToSend;
                 if (i >= dimmingDemo.demoPeriod)
                 {
                     break;

@@ -9,7 +9,7 @@
 
 #define PROMATIX_VERSION_MAJOR 2
 #define PROMATIX_VERSION_MINOR 6
-#define PROMATIX_VERSION_PATCH 0
+#define PROMATIX_VERSION_PATCH 1
 
 //-------------------------------------------------------------
 // Direcciones en memoria no volatil
@@ -18,12 +18,12 @@
 #define DIR_PROMATIX_VERSION_MINOR 0x01 // 1 Byte
 #define DIR_PROMATIX_VERSION_PATCH 0x02 // 1 Byte
 
-#define DIR_LOOP_DELAY 0x10     // 2 Bytes
-#define DIR_OP_MODE 0x12        // 1 Byte
-#define DIR_CURVE 0x13          // 1 Byte
-#define DIR_MANUAL_DIMMING 0x14 // 1 Byte
-#define DIR_CUSTOM_CURVE 0x15   // 12 Bytes
-#define DIR_ON_OFF_TIME 0x21    // 4 bytes
+#define DIR_LOOP_DELAY 0x10     // 3 Bytes
+#define DIR_OP_MODE 0x13        // 1 Byte
+#define DIR_CURVE 0x14          // 1 Byte
+#define DIR_MANUAL_DIMMING 0x15 // 1 Byte
+#define DIR_CUSTOM_CURVE 0x16   // 12 Bytes
+#define DIR_ON_OFF_TIME 0x22    // 4 bytes
 
 
 //-------------------------------------------------------------
@@ -36,6 +36,9 @@
 #endif
 
 #endif
+
+//-------------------------------------------------------------
+// 
 
 //-------------------------------------------------------------
 // secuencias para los leds

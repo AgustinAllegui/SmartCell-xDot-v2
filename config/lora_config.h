@@ -43,10 +43,10 @@
 //-------------------------------------------------------------
 // join atempts
 
-//#define INITIAL_JOIN_ATEMPTS 24
-//#define LOOP_JOIN_ATEMPTS	8
+#define INITIAL_JOIN_ATEMPTS 24
+#define LOOP_JOIN_ATEMPTS	8
 
-#define INITIAL_JOIN_ATEMPTS 4
-#define LOOP_JOIN_ATEMPTS	3
+//#define INITIAL_JOIN_ATEMPTS 4
+//#define LOOP_JOIN_ATEMPTS	3
 
 #endif
