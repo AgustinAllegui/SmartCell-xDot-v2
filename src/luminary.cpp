@@ -63,7 +63,8 @@ LightOutput lightOutput(PB_2, PB_0);
 uint16_t loopDelay = 30; // amount of seconds between loops
 uint8_t loopsToSend = 20; // cantidad de bucles entre transmisiones
 uint8_t loopsCount = 0; // contador para saber si toca transmitir
-bool bypassLoopDelay = false;
+//float lastDimming = 0;  // memoria para detectar cambios en el dimming
+bool bypassLoopDelay = false; // bandera para saltarse loops
 
 Timer lastMesureTimer; // timer para medicion de energia
 LowPowerTimer lastClockSyncTimer;
@@ -473,7 +474,9 @@ int main()
     while (true)
     {
         // [START] Luminary Loop
+        logDebug("LoopsCount: %u", loopsCount);
         if(loopsCount >= loopsToSend){
+            logDebug("Sending part 1");
 
     #if ENABLE_JOIN == 1
             // Intentamos Join.
@@ -520,9 +523,11 @@ int main()
             if (pendingSendConfig)
             {
                 pendingSendConfig = false;
-                send_smartCellConfig(lightController.getMode(), static_cast<uint8_t>(lightController.getManualDimLevel() * 100), loopDelay);
+                send_smartCellConfig(lightController.getMode(), static_cast<uint8_t>(lightController.getManualDimLevel() * 100), loopDelay, loopsToSend);
             }
 
+        }else{
+            logDebug("Bypassing Sending part 1");
         }
         // Energy calculation
         float power = currentSensor.getCurrent(5) * 220;
@@ -563,7 +568,9 @@ int main()
             ledStatus.setCicle(LED_SEQUENCE_ERROR_2);
 
         // Send Light Status
+        logDebug("LoopsCount: %u", loopsCount);
         if(loopsCount >= loopsToSend){
+            logDebug("Sending part 2");
             if (dot->getNetworkJoinStatus())
             {
                 if (send_lightStatus(dimming, power, energy))
@@ -581,12 +588,16 @@ int main()
             {
                 ledLora.setCicle(LED_SEQUENCE_ERROR_1);
             }
+        }else{
+            logDebug("Bypassing Sending part 2");
         }
 
         // contar loops
         if(loopsCount >= loopsToSend){
+            logDebug("Resetting loopsCount");
             loopsCount = 0;
         }
+        logTrace("loopsCount %u -> %u", loopsCount, loopsCount+1);
         loopsCount++;
 
         // [END] Luminary Loop
