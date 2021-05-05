@@ -584,10 +584,10 @@ int main()
         }
 
         // contar loops
-        loopsCount++;
         if(loopsCount >= loopsToSend){
             loopsCount = 0;
         }
+        loopsCount++;
 
         // [END] Luminary Loop
 
