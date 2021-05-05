@@ -96,7 +96,7 @@ bool send_lightStatus(const float dimming, const float power, const float energy
  * @param manualDimming Nivel de dimming manual.
  * @param loopDelay Retardo entre ciclos [segundos]
  */
-bool send_smartCellConfig(const uint8_t lightMode, const uint8_t manualDimming, const uint16_t loopDelay);
+bool send_smartCellConfig(const uint8_t lightMode, const uint8_t manualDimming, const uint16_t loopDelay, const uint8_t loopsToSend);
 
 /**
  * @brief Si esta unico, envia el timestamp actual.

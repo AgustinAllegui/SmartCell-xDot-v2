@@ -86,7 +86,7 @@ bool send_lightStatus(const float dimming, const float power, const float energy
   return false;
 }
 
-bool send_smartCellConfig(const uint8_t lightMode, const uint8_t manualDimming, const uint16_t loopDelay)
+bool send_smartCellConfig(const uint8_t lightMode, const uint8_t manualDimming, const uint16_t loopDelay, const uint8_t loopsToSend)
 {
   // Solo ejecutar si se esta unido a la red lora
   if (dot->getNetworkJoinStatus())
@@ -101,6 +101,7 @@ bool send_smartCellConfig(const uint8_t lightMode, const uint8_t manualDimming, 
     tx_data.push_back(manualDimming);
     tx_data.push_back(static_cast<uint8_t>((loopDelay & 0xFF00) >> 8));
     tx_data.push_back(static_cast<uint8_t>(loopDelay & 0x00FF));
+    tx_data.push_back(loopsToSend);
 
     // enviar el buffer
     return (send_data(tx_data) == mDot::MDOT_OK);
