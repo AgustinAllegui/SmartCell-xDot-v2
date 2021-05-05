@@ -63,7 +63,7 @@ LightOutput lightOutput(PB_2, PB_0);
 uint16_t loopDelay = 30; // amount of seconds between loops
 uint8_t loopsToSend = 20; // cantidad de bucles entre transmisiones
 uint8_t loopsCount = 0; // contador para saber si toca transmitir
-//float lastDimming = 0;  // memoria para detectar cambios en el dimming
+float lastDimming = 0;  // memoria para detectar cambios en el dimming
 bool bypassLoopDelay = false; // bandera para saltarse loops
 
 Timer lastMesureTimer; // timer para medicion de energia
@@ -538,6 +538,13 @@ int main()
         // Cambiar el nivel de dimming segun la hora
         float dimming = lightController.getDimming(getHour(), getMinute());
         lightOutput.setOutput(dimming);
+
+        // forzar envio si cambio el nivel de dimming
+        if((lastDimming != dimming) && !(loopsCount >= loopsToSend)){
+            bypassLoopDelay = true;
+        }
+        lastDimming = dimming;
+        
 
         // medicion de potencia
         wait_us(500000); // retardo de 500ms para que se estabilice la corriente antes de medirla
