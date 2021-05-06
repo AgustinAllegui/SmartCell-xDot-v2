@@ -584,7 +584,7 @@ int main()
             logDebug("Sending part 2");
             if (isJoined)
             {
-                if (send_lightStatus(dimming, power, energy))
+                if (send_lightStatus(dimming, power, energy, lightController.getMode()))
                 {
                     // Quitar parte enviada de la energia.
                     energy -= trunc(energy);

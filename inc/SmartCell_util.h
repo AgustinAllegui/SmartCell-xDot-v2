@@ -85,7 +85,7 @@ void printTime();
  * @param power valor de potencia (>0)
  * @param energy valor de potencia (>0)
  */
-bool send_lightStatus(const float dimming, const float power, const float energy);
+bool send_lightStatus(const float dimming, const float power, const float energy, const uint8_t mode);
 
 /**
  * @brief Si esta unico, envia las configuraciones actuales del nodo.

@@ -59,7 +59,7 @@ void printTime()
 
 //------------------------------------------------------------------
 
-bool send_lightStatus(const float dimming, const float power, const float energy)
+bool send_lightStatus(const float dimming, const float power, const float energy, const uint8_t mode)
 {
   // Solo ejecutar si se esta unido a la red lora
   if (dot->getNetworkJoinStatus())
@@ -79,6 +79,8 @@ bool send_lightStatus(const float dimming, const float power, const float energy
     aux16 = static_cast<uint16_t>(energy);
     tx_data.push_back(static_cast<uint8_t>(aux16 >> 8));
     tx_data.push_back(static_cast<uint8_t>(aux16));
+
+    tx_data.push_back(mode);
 
     // enviar el buffer
     return (send_data(tx_data) == mDot::MDOT_OK);
