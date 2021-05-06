@@ -66,6 +66,8 @@ uint8_t loopsCount = 0; // contador para saber si toca transmitir
 float lastDimming = 0;  // memoria para detectar cambios en el dimming
 bool bypassLoopDelay = false; // bandera para saltarse loops
 
+bool isJoined = false;
+
 Timer lastMesureTimer; // timer para medicion de energia
 LowPowerTimer lastClockSyncTimer;
 
@@ -456,6 +458,7 @@ int main()
 #if ENABLE_JOIN == 1
     // Intentamos Join y si es exitoso
     join_network(INITIAL_JOIN_ATEMPTS);
+    isJoined = dot->getNetworkJoinStatus();
 
 #endif
 
@@ -480,9 +483,10 @@ int main()
 
     #if ENABLE_JOIN == 1
             // Intentamos Join.
-            if (!dot->getNetworkJoinStatus())
+            if (!isJoined)
             {
                 join_network(LOOP_JOIN_ATEMPTS);
+                isJoined = dot->getNetworkJoinStatus();
             }
 
     #endif
@@ -554,7 +558,7 @@ int main()
         logInfo("========================");
         logInfo("SmartCell configuration");
         logInfo("========================");
-        logInfo("Has Joined ====== %s", dot->getNetworkJoinStatus() ? "true" : "false");
+        logInfo("Has Joined ====== %s", isJoined ? "true" : "false");
         lightController.printMode();
         logInfo("Dimming ========= %.0f %", dimming * 100);
         logInfo("Power =========== %.2fW", power);
@@ -578,7 +582,7 @@ int main()
         logDebug("LoopsCount: %u", loopsCount);
         if(loopsCount >= loopsToSend){
             logDebug("Sending part 2");
-            if (dot->getNetworkJoinStatus())
+            if (isJoined)
             {
                 if (send_lightStatus(dimming, power, energy))
                 {
