@@ -34,7 +34,7 @@ float PhotoCell::read(const uint8_t ammount)
   for (uint8_t i = 0; i < ammount; i++)
   {
     float value = pin.read();
-    logDebug("-Valor medido %f", value);
+    //logDebug("-Valor medido %f", value);
     accumulator += (value / ammount);
   }
 
@@ -56,7 +56,7 @@ float PhotoCell::getLastRead()
 bool PhotoCell::shouldBeOn()
 {
   float currentRead = read(10);
-  logDebug("-Promedio %f", currentRead);
+  //logDebug("-Promedio %f", currentRead);
   if (lastState)
   {
     if (currentRead > offThreshold)
