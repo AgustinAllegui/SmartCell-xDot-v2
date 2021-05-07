@@ -36,7 +36,7 @@ static uint8_t network_key[] = APP_KEY;
 static uint8_t frequency_sub_band = LORA_SUB_BAND;
 static lora::NetworkType network_type = lora::PUBLIC_LORAWAN;
 static uint8_t join_delay = 5;
-static uint8_t ack = 1;
+static uint8_t ack = 0;
 static bool adr = true;
 
 mDot *dot = NULL;
@@ -77,9 +77,43 @@ bool pendingSyncClock = false;
 bool pendingSendTimestamp = false;
 bool pendingSendConfig = false;
 
-// [END] Luminary global
+bool pendingSaveConfig = false;
 
-// [START] Luminary global
+
+// [END] Luminary global variables
+
+// [START] Luminary global functions
+
+void saveSmartcellConfig(){
+    logTrace("Saving configurations to NVM");
+    uint8_t saveBuffer[NVM_SAVE_BUFFER_SIZE];
+
+    // guardartime config
+    saveBuffer[DIR_LOOP_DELAY-DIR_INITIAL_NVM_PARAM] = static_cast<uint8_t>((loopDelay & 0xFF00) >> 8);
+    saveBuffer[DIR_LOOP_DELAY-DIR_INITIAL_NVM_PARAM+1] = static_cast<uint8_t>(loopDelay & 0x00FF);
+    saveBuffer[DIR_LOOP_DELAY-DIR_INITIAL_NVM_PARAM+2] = loopsToSend;
+
+    // guardar modo de operacion
+    saveBuffer[DIR_OP_MODE-DIR_INITIAL_NVM_PARAM] = lightController.getMode();
+
+    // guardar curva seleccionada
+    saveBuffer[DIR_CURVE-DIR_INITIAL_NVM_PARAM] = dimmingCurves.getCurrentCurve(); 
+
+    // guardar nivel de dimming manual
+    saveBuffer[DIR_MANUAL_DIMMING-DIR_INITIAL_NVM_PARAM] = static_cast<uint8_t>(lightController.getManualDimLevel() * 100);
+
+    // guardar horas de on y off
+    saveBuffer[DIR_ON_OFF_TIME-DIR_INITIAL_NVM_PARAM+0] = onOffByTime.getOnHour();
+    saveBuffer[DIR_ON_OFF_TIME-DIR_INITIAL_NVM_PARAM+1] = onOffByTime.getOnMinute();
+    saveBuffer[DIR_ON_OFF_TIME-DIR_INITIAL_NVM_PARAM+2] = onOffByTime.getOffHour();
+    saveBuffer[DIR_ON_OFF_TIME-DIR_INITIAL_NVM_PARAM+3] = onOffByTime.getOffMinute();
+    dot->nvmWrite(DIR_INITIAL_NVM_PARAM, saveBuffer, NVM_SAVE_BUFFER_SIZE);
+
+    // guardar custom curve
+    dot->nvmWrite(DIR_CUSTOM_CURVE, customCurve, 12);
+
+    pendingSaveConfig = false;
+}
 
 void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
 {
@@ -111,12 +145,7 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
         logInfo("Switching to Curve %u", RxBuffer[1]);
         dimmingCurves.selectCurve(RxBuffer[1]);
         lightController.setOpMode(LightController::OpMode::AutoCurve);
-
-        //save config
-        saveBuffer[0] = static_cast<uint8_t>(LightController::OpMode::AutoCurve);
-        dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
-        saveBuffer[0] = dimmingCurves.getCurrentCurve();
-        dot->nvmWrite(DIR_CURVE, saveBuffer, 1);
+        pendingSaveConfig = true;
         break;
     }
 
@@ -127,12 +156,7 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
         logInfo("Switching to Manual %u%", RxBuffer[1]);
         lightController.setManualDimming(static_cast<float>(RxBuffer[1]) / 100);
         lightController.setOpMode(LightController::OpMode::Manual);
-
-        //save config
-        saveBuffer[0] = static_cast<uint8_t>(LightController::OpMode::Manual);
-        dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
-        saveBuffer[0] = static_cast<uint8_t>(lightController.getManualDimLevel() * 100);
-        dot->nvmWrite(DIR_MANUAL_DIMMING, saveBuffer, 1);
+        pendingSaveConfig = true;
         break;
     }
 
@@ -153,8 +177,8 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
         if (RxBufferSize < 7)
             break;
         logInfo("Setting low part of custom curve");
-        dot->nvmWrite(DIR_CUSTOM_CURVE, &RxBuffer[1], 6); // Guardar parte baja
-        dot->nvmRead(DIR_CUSTOM_CURVE, customCurve, 12);
+        memcpy(&customCurve[0], &RxBuffer[1], 6);
+        pendingSaveConfig = true;
         break;
     }
     case 'K': // Configurar parte alta de customCurve
@@ -162,8 +186,8 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
         if (RxBufferSize < 7)
             break;
         logInfo("Setting high part of custom curve");
-        dot->nvmWrite(DIR_CUSTOM_CURVE + 6, &RxBuffer[1], 6); // Guardar parte alta
-        dot->nvmRead(DIR_CUSTOM_CURVE, customCurve, 12);
+        memcpy(&customCurve[6], &RxBuffer[1], 6);
+        pendingSaveConfig = true;
         break;
     }
 
@@ -176,33 +200,25 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
         case 0x00:
             logInfo("Switch to mode Manual");
             lightController.setOpMode(LightController::OpMode::Manual);
-            saveBuffer[0] = static_cast<uint8_t>(LightController::OpMode::Manual);
-            dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
             break;
         case 0x01:
             logInfo("Switch to mode PhotoCell");
             lightController.setOpMode(LightController::OpMode::AutoPhotoCell);
-            saveBuffer[0] = static_cast<uint8_t>(LightController::OpMode::AutoPhotoCell);
-            dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
             break;
         case 0x02:
             logInfo("Switch to mode dimming Curve");
             lightController.setOpMode(LightController::OpMode::AutoCurve);
-            saveBuffer[0] = static_cast<uint8_t>(LightController::OpMode::AutoCurve);
-            dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
             break;
         case 0x03:
             logInfo("Switch to mode Demo");
             lightController.setOpMode(LightController::OpMode::Demo);
-            //! no se si conviene guardar el modo demo en memoria no volatil.
-            saveBuffer[0] = static_cast<uint8_t>(LightController::OpMode::Demo);
-            dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
             break;
 
         default:
             logError("Mode not found");
             break;
         }
+        pendingSaveConfig = true;
         break;
     }
 
@@ -213,15 +229,8 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
         logInfo("Setting On-Off time: %02u:%02u - %02u:%02u", RxBuffer[1], RxBuffer[2], RxBuffer[3], RxBuffer[4]);
         onOffByTime.setOnOffTime(RxBuffer[1], RxBuffer[2], RxBuffer[3], RxBuffer[4]);
         lightController.setOpMode(LightController::OpMode::AutoTime);
-        
-        //save config
-        saveBuffer[0] = static_cast<uint8_t>(LightController::OpMode::AutoTime);
-        dot->nvmWrite(DIR_OP_MODE, saveBuffer, 1);
-        saveBuffer[0] = onOffByTime.getOnHour();
-        saveBuffer[1] = onOffByTime.getOnMinute();
-        saveBuffer[2] = onOffByTime.getOffHour();
-        saveBuffer[3] = onOffByTime.getOffMinute();
-        dot->nvmWrite(DIR_ON_OFF_TIME, saveBuffer, 4);
+        pendingSaveConfig = true;
+        break;
 
     }
     case 'R': // Software reset
@@ -248,7 +257,7 @@ void payloadParser(uint8_t *RxBuffer, uint8_t RxBufferSize)
         loopDelay = aux16;
         loopsToSend = RxBuffer[3];
         //save config
-        dot->nvmWrite(DIR_LOOP_DELAY, &RxBuffer[1], 3);
+        pendingSaveConfig = true;
         break;
     }
     }
@@ -266,8 +275,8 @@ int main()
 
     pc.baud(9600);
 
-//    mts::MTSLog::setLogLevel(mts::MTSLog::TRACE_LEVEL);
-	mts::MTSLog::setLogLevel(mts::MTSLog::DEBUG_LEVEL);
+    mts::MTSLog::setLogLevel(mts::MTSLog::TRACE_LEVEL);
+//	mts::MTSLog::setLogLevel(mts::MTSLog::DEBUG_LEVEL);
 
 #if CHANNEL_PLAN == CP_US915
     plan = new lora::ChannelPlan_US915();
@@ -290,6 +299,7 @@ int main()
     assert(dot);
 
     logInfo("mbed-os library version: %d.%d.%d", MBED_MAJOR_VERSION, MBED_MINOR_VERSION, MBED_PATCH_VERSION);
+    logInfo("mDot library version: %s", dot->getId().c_str());
     logInfo("Promatix SmartCell version: %d.%d.%d", PROMATIX_VERSION_MAJOR, PROMATIX_VERSION_MINOR, PROMATIX_VERSION_PATCH);
 
     // start from a well-known state
@@ -298,7 +308,7 @@ int main()
     dot->resetNetworkSession();
 
     // make sure library logging is turned on
-    dot->setLogLevel(mts::MTSLog::DEBUG_LEVEL);
+    dot->setLogLevel(mts::MTSLog::TRACE_LEVEL);
 		//dot->setLogLevel(mts::MTSLog::INFO_LEVEL);
 
     // attach the custom events handler
@@ -374,7 +384,7 @@ int main()
 
             saveBuffer[0] = 0x00; // loop delay cada 10 minutos
             saveBuffer[1] = 0x1E;
-            saveBuffer[2] = 0x20; // 20 loops entre envios
+            saveBuffer[2] = 20; // 20 loops entre envios
             dot->nvmWrite(DIR_LOOP_DELAY, saveBuffer, 3);
 
             saveBuffer[0] = 0x01; // Modo de operacion Fotocelda
@@ -477,11 +487,16 @@ int main()
     while (true)
     {
         // [START] Luminary Loop
+        // guardar datos en NVM si esta pendiente
+        if(pendingSaveConfig){
+            saveSmartcellConfig();
+        }
+
         logDebug("LoopsCount: %u", loopsCount);
         if(loopsCount >= loopsToSend){
             logDebug("Sending part 1");
 
-    #if ENABLE_JOIN == 1
+            #if ENABLE_JOIN == 1
             // Intentamos Join.
             if (!isJoined)
             {
@@ -489,11 +504,11 @@ int main()
                 isJoined = dot->getNetworkJoinStatus();
             }
 
-    #endif
+            #endif
             // Show time
             printTime();
 
-    #if ENABLE_JOIN == 1
+            #if ENABLE_JOIN == 1
             // Sincronizar hora si no esta sincronizado o cada 12 horas.
             // if ( pendingSyncClock || !timeIsSynced() || lastClockSyncTimer.read() > 43200)
             if (pendingSyncClock || !timeIsSynced() || lastClockSyncTimer.read() > 43200)
@@ -505,7 +520,7 @@ int main()
                     lastClockSyncTimer.reset();
                 }
             }
-    #endif
+            #endif
 
             // enviar timestamp si estaba pendiente
             if (pendingSendTimestamp)
@@ -533,6 +548,9 @@ int main()
         }else{
             logDebug("Bypassing Sending part 1");
         }
+
+        
+
         // Energy calculation
         float power = currentSensor.getCurrent(5) * 220;
         float timeSinceLastMesure = lastMesureTimer.read();
@@ -617,7 +635,7 @@ int main()
         // it must be waiting for data from the gateway
 
         uint16_t thisDelay = loopDelay + (rand() % (20 + 1)) - 10;
-        logInfo("waiting for %us", thisDelay);
+        logInfo("waiting for %us\n\r", thisDelay);
         for (uint16_t i = 0; i < thisDelay; i++)
         {
             // Saltarse el retardo si se activa el bypass
