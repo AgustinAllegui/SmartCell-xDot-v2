@@ -275,8 +275,8 @@ int main()
 
     pc.baud(9600);
 
-    mts::MTSLog::setLogLevel(mts::MTSLog::TRACE_LEVEL);
-//	mts::MTSLog::setLogLevel(mts::MTSLog::DEBUG_LEVEL);
+    mts::MTSLog::setLogLevel(mts::MTSLog::INFO_LEVEL);
+    //mts::MTSLog::setLogLevel(mts::MTSLog::DEBUG_LEVEL);
 
 #if CHANNEL_PLAN == CP_US915
     plan = new lora::ChannelPlan_US915();
@@ -308,8 +308,7 @@ int main()
     dot->resetNetworkSession();
 
     // make sure library logging is turned on
-    dot->setLogLevel(mts::MTSLog::TRACE_LEVEL);
-		//dot->setLogLevel(mts::MTSLog::INFO_LEVEL);
+    dot->setLogLevel(mts::MTSLog::INFO_LEVEL);
 
     // attach the custom events handler
     dot->setEvents(&events);
